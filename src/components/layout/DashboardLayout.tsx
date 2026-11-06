@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import { AppSidebar } from './AppSidebar';
 import { BottomNav } from './BottomNav';
@@ -9,7 +9,7 @@ import { Bell } from 'lucide-react';
 
 export const DashboardLayout: React.FC = () => {
   const { user } = useAuth();
-  const { ticketCounts } = useTickets();
+  const { tickets, ticketCounts, getTicketsForRole } = useTickets();
   const navigate = useNavigate();
 
   // Active Role from user auth
@@ -22,6 +22,18 @@ export const DashboardLayout: React.FC = () => {
     currentRole === 'Super Admin'
       ? 'super-admin'
       : currentRole.toLowerCase();
+
+  const isSuperAdmin = currentRole === 'Super Admin';
+  const userTickets = isSuperAdmin ? tickets : getTicketsForRole(currentRole);
+
+  const userActivityLogsCount = useMemo(() => {
+    return userTickets.reduce((acc, t) => {
+      let events = 1;
+      if (t.status && t.status !== 'In Progress') events += 1;
+      if (t.supportMessage) events += 1;
+      return acc + events;
+    }, 0);
+  }, [userTickets]);
 
   // Persistent Sidebar State in localStorage
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(() => {
@@ -78,7 +90,7 @@ export const DashboardLayout: React.FC = () => {
               title="Activity & Notifications"
             >
               <Bell className="h-4 w-4" />
-              {ticketCounts.total > 0 && (
+              {userActivityLogsCount > 0 && (
                 <span className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 h-2 w-2 rounded-full bg-red-600 ring-2 ring-white" />
               )}
             </button>
