@@ -4,6 +4,7 @@ import type { SupportTicket, UserRole } from '../../types';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../ui/card';
 import { Button } from '../ui/button';
 import { FileUpload, type UploadedFile } from '../ui/file-upload';
+import { TicketAttachmentViewer } from '../tickets/TicketAttachmentViewer';
 import {
   Send,
   PlusCircle,
@@ -17,7 +18,8 @@ import {
   Search,
   Trash2,
   AlertTriangle,
-  MessageSquare
+  MessageSquare,
+  Eye
 } from 'lucide-react';
 
 interface UserRoleViewProps {
@@ -51,6 +53,7 @@ export const UserRoleView: React.FC<UserRoleViewProps> = ({
   const [submittedId, setSubmittedId] = useState<string | null>(null);
   const [ticketSearch, setTicketSearch] = useState('');
   const [ticketToDelete, setTicketToDelete] = useState<SupportTicket | null>(null);
+  const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
 
   // Filter only tickets that belong to the active user role
   const myRoleTickets = tickets.filter((t) => t.category === currentRole);
@@ -336,6 +339,16 @@ export const UserRoleView: React.FC<UserRoleViewProps> = ({
                             <span>{ticket.status}</span>
                           </span>
 
+                          {/* Details Button */}
+                          <button
+                            type="button"
+                            onClick={() => setSelectedTicket(ticket)}
+                            className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+                            title="View full details and attachments"
+                          >
+                            <Eye className="h-3.5 w-3.5" />
+                          </button>
+
                           {/* Delete Ticket Button */}
                           <button
                             type="button"
@@ -470,15 +483,26 @@ export const UserRoleView: React.FC<UserRoleViewProps> = ({
                             {ticket.submittedAt}
                           </td>
                           <td className="py-3.5 px-4 text-right whitespace-nowrap">
-                            <button
-                              type="button"
-                              onClick={() => setTicketToDelete(ticket)}
-                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer border border-transparent hover:border-red-200"
-                              title="Delete ticket"
-                            >
-                              <Trash2 className="h-3.5 w-3.5 text-slate-400 hover:text-red-600" />
-                              <span>Delete</span>
-                            </button>
+                            <div className="flex items-center justify-end gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => setSelectedTicket(ticket)}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-50 text-slate-700 hover:bg-red-50 hover:text-red-700 border border-slate-200 hover:border-red-200 transition-colors cursor-pointer"
+                                title="View full details and attachments"
+                              >
+                                <Eye className="h-3 w-3" />
+                                <span>Details</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setTicketToDelete(ticket)}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer border border-transparent hover:border-red-200"
+                                title="Delete ticket"
+                              >
+                                <Trash2 className="h-3.5 w-3.5 text-slate-400 hover:text-red-600" />
+                                <span>Delete</span>
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -538,6 +562,135 @@ export const UserRoleView: React.FC<UserRoleViewProps> = ({
                 >
                   Delete Ticket
                 </Button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+
+      {/* Ticket Details & Document Viewer Modal (Mounted via createPortal with z-[999]) */}
+      {selectedTicket &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[999] bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setSelectedTicket(null);
+            }}
+          >
+            <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200 shadow-2xl max-w-lg w-full flex flex-col max-h-[90vh] animate-fadeIn overflow-hidden">
+              {/* Modal Header */}
+              <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 sm:py-4 border-b border-slate-100 shrink-0 bg-white">
+                <span className="font-mono text-sm sm:text-base font-bold text-red-600">
+                  #{selectedTicket.id}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setSelectedTicket(null)}
+                  className="h-8 w-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center text-sm font-bold transition-colors cursor-pointer"
+                  title="Close"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Modal Body */}
+              <div className="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1 text-xs">
+                <div>
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">
+                    Subject
+                  </span>
+                  <span className="font-bold text-slate-900 text-xs sm:text-sm break-words mt-0.5 block">
+                    {selectedTicket.subject}
+                  </span>
+                </div>
+
+                <div>
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">
+                    Description & Reproduction Details
+                  </span>
+                  <p className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 text-slate-700 leading-relaxed mt-1 break-words">
+                    {selectedTicket.description}
+                  </p>
+                </div>
+
+                {/* Status Badge */}
+                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center justify-between">
+                  <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                    <MessageSquare className="h-3.5 w-3.5 text-red-600 shrink-0" />
+                    Current Status
+                  </span>
+                  <span
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold border shadow-2xs ${
+                      selectedTicket.status === 'Resolved'
+                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200/80'
+                        : selectedTicket.status === 'In Progress'
+                        ? 'bg-amber-50 text-amber-700 border-amber-200/80'
+                        : selectedTicket.status === 'Investigating'
+                        ? 'bg-sky-50 text-sky-700 border-sky-200/80'
+                        : 'bg-purple-50 text-purple-700 border-purple-200/80'
+                    }`}
+                  >
+                    <span
+                      className={`h-1.5 w-1.5 rounded-full ${
+                        selectedTicket.status === 'Resolved'
+                          ? 'bg-emerald-500'
+                          : selectedTicket.status === 'In Progress'
+                          ? 'bg-amber-500 animate-pulse'
+                          : selectedTicket.status === 'Investigating'
+                          ? 'bg-sky-500 animate-pulse'
+                          : 'bg-purple-500'
+                      }`}
+                    />
+                    <span>{selectedTicket.status}</span>
+                  </span>
+                </div>
+
+                {/* Support Response if present */}
+                {selectedTicket.supportMessage && (
+                  <div className="p-3 rounded-xl bg-white border border-red-200 shadow-2xs space-y-1">
+                    <span className="text-[10px] text-red-700 font-bold uppercase tracking-wider block">
+                      Direct Message from Support:
+                    </span>
+                    <p className="text-xs text-slate-800 leading-relaxed font-medium break-words">
+                      {selectedTicket.supportMessage}
+                    </p>
+                  </div>
+                )}
+
+                {/* Interactive Attached Files & Document Viewer */}
+                <div>
+                  <TicketAttachmentViewer
+                    ticketId={selectedTicket.id}
+                    attachmentsCount={selectedTicket.attachmentsCount}
+                    initialAttachments={selectedTicket.attachments}
+                    onAttachmentsLoaded={(loadedAtts) => {
+                      setSelectedTicket((prev) => (prev ? { ...prev, attachments: loadedAtts } : null));
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="px-4 sm:px-6 py-3.5 bg-slate-50/80 border-t border-slate-100 flex items-center justify-between gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const toDel = selectedTicket;
+                    setSelectedTicket(null);
+                    setTicketToDelete(toDel);
+                  }}
+                  className="px-3 py-2 rounded-xl text-xs font-semibold text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer flex items-center gap-1.5 transition-colors"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  <span>Delete Ticket</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedTicket(null)}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 cursor-pointer shadow-2xs"
+                >
+                  Close
+                </button>
               </div>
             </div>
           </div>,
