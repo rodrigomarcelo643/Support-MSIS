@@ -71,7 +71,7 @@ export const AuthCallbackPage: React.FC = () => {
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-4 space-y-3">
-              <Loader2 className="h-6 w-6 text-blue-600 animate-spin" />
+              <Loader2 className="h-6 w-6 text-red-600 animate-spin" />
               <p className="text-xs text-slate-600 font-medium">Verifying Google Institutional Access...</p>
             </div>
           )}

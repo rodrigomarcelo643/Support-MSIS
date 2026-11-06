@@ -60,7 +60,7 @@ export const PublicPage: React.FC = () => {
           <div className="flex items-center space-x-3">
             <img src={medicineLogo} alt="MSIS Logo" className="h-9 w-auto object-contain" />
             <span className="text-lg font-bold text-slate-800 tracking-tight">
-              MSIS <span className="text-blue-600 font-semibold">| Support</span>
+              MSIS <span className="text-red-600 font-semibold">| Support</span>
             </span>
           </div>
 
@@ -88,8 +88,8 @@ export const PublicPage: React.FC = () => {
           className="text-center space-y-4 max-w-2xl mx-auto"
         >
           <motion.div variants={itemVariants} className="flex justify-center mb-2">
-            <div className="p-2.5 rounded-2xl bg-white border border-slate-200/80 shadow-xs">
-              <img src={medicineLogo} alt="MSIS Logo" className="h-11 w-auto object-contain" />
+            <div >
+              <img src={medicineLogo} alt="MSIS Logo" className="h-16 w-auto object-contain" />
             </div>
           </motion.div>
 
@@ -147,7 +147,7 @@ export const PublicPage: React.FC = () => {
 
           <motion.div variants={itemVariants} whileHover={{ y: -4 }} transition={{ duration: 0.2 }}>
             <Card variant="default" className="bg-white border-slate-200/80 shadow-xs rounded-2xl p-6 space-y-3 h-full">
-              <div className="h-10 w-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+              <div className="h-10 w-10 rounded-xl bg-red-50 text-red-600 flex items-center justify-center">
                 <Wrench className="h-5 w-5" />
               </div>
               <div className="space-y-1">

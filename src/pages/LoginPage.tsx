@@ -32,7 +32,7 @@ export const LoginPage: React.FC = () => {
           tokenClientRef.current = null; // Re-initialize with latest client id
         }
       })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   // Initialize Google Identity Services
@@ -232,7 +232,7 @@ export const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#f4f6fa] flex items-center justify-center p-4 sm:p-6 antialiased selection:bg-blue-100">
+    <div className="min-h-screen bg-[#f4f6fa] flex items-center justify-center p-4 sm:p-6 antialiased selection:bg-red-100">
       <motion.div
         initial={{ opacity: 0, y: 18, scale: 0.98 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -247,11 +247,11 @@ export const LoginPage: React.FC = () => {
               transition={{ delay: 0.1, duration: 0.35, ease: 'easeOut' }}
               className="flex justify-center mb-3"
             >
-              <div className="p-2.5 rounded-2xl bg-slate-50 border border-slate-200/80 shadow-xs">
+              <div>
                 <img
                   src={medicineLogo}
                   alt="MSIS Logo"
-                  className="h-12 w-auto object-contain"
+                  className="h-16 w-auto object-contain"
                 />
               </div>
             </motion.div>
@@ -262,7 +262,7 @@ export const LoginPage: React.FC = () => {
               transition={{ delay: 0.15, duration: 0.35, ease: 'easeOut' }}
             >
               <CardTitle className="text-xl font-bold text-slate-800">
-                MSIS <span className="text-blue-600 font-semibold">| Support</span>
+                MSIS <span className="text-red-600 font-semibold">| Support</span>
               </CardTitle>
               <p className="text-xs text-slate-500 mt-1.5 max-w-[260px] mx-auto leading-relaxed">
                 Centralized support desk for submitting and tracking technical requests.
@@ -279,7 +279,7 @@ export const LoginPage: React.FC = () => {
               className="grid grid-cols-3 gap-2 py-1"
             >
               <div className="p-2 rounded-xl bg-slate-50 border border-slate-100 text-center space-y-0.5">
-                <Zap className="h-3.5 w-3.5 text-blue-600 mx-auto" />
+                <Zap className="h-3.5 w-3.5 text-red-600 mx-auto" />
                 <span className="text-[10px] font-bold text-slate-700 block">Fast Triage</span>
               </div>
               <div className="p-2 rounded-xl bg-slate-50 border border-slate-100 text-center space-y-0.5">

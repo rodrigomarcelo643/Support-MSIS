@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import medicineLogo from '../assets/logo/medicine-logo.png';
 import { AppSidebar } from '../components/layout/AppSidebar';
 import { SuperAdminView } from '../components/dashboard/SuperAdminView';
 import { UserRoleView } from '../components/dashboard/UserRoleView';
@@ -13,12 +12,8 @@ import {
   LogOut,
   Eye,
   CheckCircle,
-  Sparkles,
-  Send,
   GraduationCap,
   ShieldAlert,
-  PanelLeftOpen,
-  PanelLeftClose,
   Settings as SettingsIcon,
   User as UserIcon,
   Check
@@ -72,10 +67,6 @@ export const DashboardPage: React.FC = () => {
       return next;
     });
   };
-
-  // AI Assistant in Dashboard view
-  const [aiPrompt, setAiPrompt] = useState('');
-  const [aiMessage, setAiMessage] = useState<string | null>(null);
 
   // Tickets state categorized by role
   const [tickets, setTickets] = useState<SupportTicket[]>([
@@ -145,10 +136,10 @@ export const DashboardPage: React.FC = () => {
   };
 
   const handleUserSubmitTicket = (data: {
-    department: string;
     subject: string;
     description: string;
     files: UploadedFile[];
+    department?: string;
   }) => {
     const departmentLabels: Record<string, string> = {
       msis: 'MSIS Department',
@@ -163,7 +154,7 @@ export const DashboardPage: React.FC = () => {
     const newTicket: SupportTicket = {
       id: `TK-${Math.floor(10000 + Math.random() * 90000)}`,
       category: currentRole === 'Super Admin' ? 'Admin' : currentRole,
-      department: departmentLabels[data.department] || data.department.toUpperCase(),
+      department: data.department ? (departmentLabels[data.department] || data.department) : `${currentRole} Unit`,
       subject: data.subject,
       description: data.description,
       status: 'In Progress',
@@ -179,15 +170,6 @@ export const DashboardPage: React.FC = () => {
   const handleSignOut = async () => {
     await signOut();
     navigate('/');
-  };
-
-  const handleAskAI = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!aiPrompt.trim()) return;
-    setAiMessage(
-      `MSIS AI: Telemetry indicates 99.8% system stability. "${aiPrompt}" has been logged in technical intelligence logs.`
-    );
-    setAiPrompt('');
   };
 
   const ticketCounts = {
@@ -213,80 +195,29 @@ export const DashboardPage: React.FC = () => {
 
       {/* 2. Main Content Canvas */}
       <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
-        {/* Top Navbar (z-20 so sidebar at z-50 is never overlapped) */}
-        <header className="bg-white border-b border-slate-200/80 px-4 sm:px-6 lg:px-8 py-3 sticky top-0 z-20 flex items-center justify-between gap-4">
-          <div className="flex items-center space-x-3">
-            {/* Open / Close Sidebar Toggle for ALL screens */}
-            <button
-              type="button"
-              onClick={handleToggleSidebar}
-              className="p-2 rounded-xl text-slate-600 hover:text-blue-600 hover:bg-blue-50 border border-slate-200 transition-colors cursor-pointer flex items-center gap-1.5 shrink-0"
-              title={isSidebarOpen ? "Collapse sidebar" : "Open sidebar"}
-            >
-              {isSidebarOpen ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeftOpen className="h-4 w-4 text-blue-600" />}
-              {!isSidebarOpen && <span className="text-xs font-semibold text-blue-600 hidden sm:inline">Menu</span>}
-            </button>
-
-            <div className="flex items-center space-x-2">
-              <img src={medicineLogo} alt="Logo" className="h-6 w-auto" />
-            </div>
-
-            <div>
-              <h1 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight flex items-center gap-2">
-                <span>MSIS Support</span>
-                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700">
-                  {currentRole}
-                </span>
-              </h1>
-              <p className="text-[11px] text-slate-400 hidden sm:block">
-                {currentRole === 'Super Admin'
-                  ? 'Central tracking console across Student, Faculty, Secretary, and Admin'
-                  : `Role-based submission and tracking portal for ${currentRole}`}
-              </p>
-            </div>
+        {/* Top Navbar */}
+        <header className="bg-white border-b border-slate-200/80 px-4 sm:px-6 lg:px-8 py-3.5 sticky top-0 z-20 flex items-center justify-between gap-4 shadow-xs">
+          <div className="flex items-center gap-2">
+            <h1 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight flex items-center gap-2">
+              <span>MSIS Support</span>
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-red-50 text-red-700">
+                {currentRole}
+              </span>
+            </h1>
           </div>
 
-          <div className="flex items-center space-x-2 sm:space-x-3">
-            {/* Quick Role Switcher Pill in Topbar */}
-            <div className="hidden lg:flex items-center space-x-1 bg-slate-100 p-1 rounded-xl text-xs">
-              <span className="text-[11px] font-bold text-slate-400 px-2">Role:</span>
-              {(['Super Admin', 'Faculty', 'Student', 'Secretary', 'Admin'] as UserRole[]).map(
-                (role) => (
-                  <button
-                    key={role}
-                    type="button"
-                    onClick={() => handleRoleChange(role)}
-                    className={`px-2.5 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
-                      currentRole === role
-                        ? 'bg-white text-slate-900 shadow-xs'
-                        : 'text-slate-600 hover:text-slate-900'
-                    }`}
-                  >
-                    {role}
-                  </button>
-                )
-              )}
-            </div>
-
-            {/* Notification Bell */}
-            <div className="relative">
-              <button
-                type="button"
-                className="h-9 w-9 rounded-xl border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-50 transition-colors cursor-pointer"
-              >
-                <Bell className="h-4 w-4" />
-                <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-blue-600 ring-2 ring-white" />
-              </button>
-            </div>
-
-            {/* Sign Out Button */}
+          <div className="flex items-center">
+            {/* Notification Bell (Only element remaining on header right) */}
             <button
               type="button"
-              onClick={handleSignOut}
-              title="Sign Out"
-              className="p-2 rounded-xl text-slate-400 hover:text-red-600 hover:bg-slate-50 transition-colors cursor-pointer"
+              onClick={() => setActiveNav('activity')}
+              className="relative h-9 w-9 rounded-xl border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-red-50 hover:text-red-600 transition-colors cursor-pointer"
+              title="Activity & Notifications"
             >
-              <LogOut className="h-4 w-4" />
+              <Bell className="h-4 w-4" />
+              {tickets.length > 0 && (
+                <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-red-600 ring-2 ring-white" />
+              )}
             </button>
           </div>
         </header>
@@ -336,7 +267,7 @@ export const DashboardPage: React.FC = () => {
               <div className="flex items-center justify-between pb-3 border-b border-slate-200">
                 <div>
                   <h2 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-                    <SettingsIcon className="h-5 w-5 text-blue-600" />
+                    <SettingsIcon className="h-5 w-5 text-red-600" />
                     <span>Account & System Settings</span>
                   </h2>
                   <p className="text-xs text-slate-500">
@@ -355,12 +286,12 @@ export const DashboardPage: React.FC = () => {
               {/* Profile Card */}
               <Card variant="default" className="bg-white border-slate-200/80 rounded-2xl p-6 shadow-xs space-y-5">
                 <div className="flex items-center gap-2 text-sm font-bold text-slate-900">
-                  <UserIcon className="h-4 w-4 text-blue-600" />
+                  <UserIcon className="h-4 w-4 text-red-600" />
                   <span>Profile Information</span>
                 </div>
 
                 <div className="flex items-center gap-4">
-                  <div className="h-14 w-14 rounded-2xl bg-blue-600 text-white font-extrabold text-lg flex items-center justify-center shadow-xs">
+                  <div className="h-14 w-14 rounded-2xl bg-red-600 text-white font-extrabold text-lg flex items-center justify-center shadow-xs">
                     {currentRole === 'Super Admin' ? 'SA' : currentRole.charAt(0) + 'U'}
                   </div>
                   <div>
@@ -371,7 +302,7 @@ export const DashboardPage: React.FC = () => {
                       {user?.email || (currentRole === 'Super Admin' ? 'admin@msis.edu' : `${currentRole.toLowerCase()}@msis.edu`)}
                     </p>
                     <div className="flex items-center gap-2 mt-1.5">
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-50 text-red-700">
                         {currentRole}
                       </span>
                       <span className="text-[10px] text-emerald-600 font-medium flex items-center gap-1">
@@ -398,25 +329,25 @@ export const DashboardPage: React.FC = () => {
               {/* Notification Preferences */}
               <Card variant="default" className="bg-white border-slate-200/80 rounded-2xl p-6 shadow-xs space-y-4">
                 <div className="flex items-center gap-2 text-sm font-bold text-slate-900">
-                  <Bell className="h-4 w-4 text-blue-600" />
+                  <Bell className="h-4 w-4 text-red-600" />
                   <span>Notification Preferences</span>
                 </div>
 
                 <div className="space-y-3">
-                  <label className="flex items-center justify-between p-3.5 rounded-xl bg-slate-50 hover:bg-blue-50/40 transition-colors cursor-pointer border border-slate-100">
+                  <label className="flex items-center justify-between p-3.5 rounded-xl bg-slate-50 hover:bg-red-50/40 transition-colors cursor-pointer border border-slate-100">
                     <div className="pr-4">
                       <span className="text-xs font-bold text-slate-800 block">Email Alerts on Status Updates</span>
                       <span className="text-[11px] text-slate-500">Receive an email when your ticket is marked Investigating or Resolved</span>
                     </div>
-                    <input type="checkbox" defaultChecked className="h-4 w-4 text-blue-600 rounded cursor-pointer accent-blue-600" />
+                    <input type="checkbox" defaultChecked className="h-4 w-4 text-red-600 rounded cursor-pointer accent-red-600" />
                   </label>
 
-                  <label className="flex items-center justify-between p-3.5 rounded-xl bg-slate-50 hover:bg-blue-50/40 transition-colors cursor-pointer border border-slate-100">
+                  <label className="flex items-center justify-between p-3.5 rounded-xl bg-slate-50 hover:bg-red-50/40 transition-colors cursor-pointer border border-slate-100">
                     <div className="pr-4">
                       <span className="text-xs font-bold text-slate-800 block">Critical System Outages</span>
                       <span className="text-[11px] text-slate-500">Immediate notifications if university server infrastructure experiences downtime</span>
                     </div>
-                    <input type="checkbox" defaultChecked className="h-4 w-4 text-blue-600 rounded cursor-pointer accent-blue-600" />
+                    <input type="checkbox" defaultChecked className="h-4 w-4 text-red-600 rounded cursor-pointer accent-red-600" />
                   </label>
                 </div>
               </Card>
@@ -447,7 +378,7 @@ export const DashboardPage: React.FC = () => {
                 <Card variant="default" className="p-5 bg-white border-slate-200/80 rounded-2xl shadow-xs">
                   <div className="flex items-center justify-between pb-3">
                     <span className="text-xs font-semibold text-slate-500">Total Tracked Issues</span>
-                    <div className="h-8 w-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+                    <div className="h-8 w-8 rounded-lg bg-red-50 text-red-600 flex items-center justify-center">
                       <Eye className="h-4 w-4" />
                     </div>
                   </div>
@@ -503,94 +434,49 @@ export const DashboardPage: React.FC = () => {
                 </Card>
               </div>
 
-              {/* Row 2: Performance Chart & AI Assistant */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 space-y-6">
-                  <Card variant="default" className="bg-white border-slate-200/80 rounded-2xl p-6 shadow-xs space-y-6">
-                    <div>
-                      <span className="text-xs font-semibold text-slate-500">
-                        MSIS Platform Reliability & Issue Triage
-                      </span>
-                      <h2 className="text-3xl font-extrabold text-slate-900 mt-1">99.8%</h2>
-                    </div>
+              {/* Row 2: Performance Chart */}
+              <div className="w-full">
+                <Card variant="default" className="bg-white border-slate-200/80 rounded-2xl p-6 shadow-xs space-y-6">
+                  <div>
+                    <span className="text-xs font-semibold text-slate-500">
+                      MSIS Platform Reliability & Issue Triage
+                    </span>
+                    <h2 className="text-3xl font-extrabold text-slate-900 mt-1">99.8%</h2>
+                  </div>
 
-                    <div className="relative pt-4 pb-2">
-                      <svg className="w-full h-44 overflow-visible" viewBox="0 0 600 160">
-                        <defs>
-                          <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.25" />
-                            <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.0" />
-                          </linearGradient>
-                        </defs>
-                        <line x1="0" y1="30" x2="600" y2="30" stroke="#f1f5f9" strokeDasharray="3 3" />
-                        <line x1="0" y1="80" x2="600" y2="80" stroke="#f1f5f9" strokeDasharray="3 3" />
-                        <line x1="0" y1="130" x2="600" y2="130" stroke="#f1f5f9" strokeDasharray="3 3" />
-                        <path
-                          d="M 0 120 Q 80 115 150 100 T 300 85 T 450 60 T 600 45 L 600 160 L 0 160 Z"
-                          fill="url(#chartGradient)"
-                        />
-                        <path
-                          d="M 0 120 Q 80 115 150 100 T 300 85 T 450 60 T 600 45"
-                          fill="none"
-                          stroke="#3b82f6"
-                          strokeWidth="2.5"
-                        />
-                        <circle cx="300" cy="85" r="5" fill="#2563eb" stroke="#ffffff" strokeWidth="2.5" />
-                      </svg>
-
-                      <div className="flex justify-between text-[11px] font-medium text-slate-400 pt-2 border-t border-slate-100">
-                        <span>Week 1</span>
-                        <span>Week 2</span>
-                        <span>Week 3</span>
-                        <span>Week 4</span>
-                        <span>Current</span>
-                      </div>
-                    </div>
-                  </Card>
-                </div>
-
-                {/* AI Assistant Card */}
-                <div>
-                  <Card variant="default" className="bg-white border-slate-200/80 rounded-2xl p-5 shadow-xs space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900">
-                        <Sparkles className="h-4 w-4 text-blue-600" />
-                        <span>MSIS AI Assistant</span>
-                      </div>
-                      <span className="text-[10px] text-emerald-600 font-semibold bg-emerald-50 px-2 py-0.5 rounded-full">
-                        Online
-                      </span>
-                    </div>
-
-                    <div className="py-4 flex justify-center items-center">
-                      <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-blue-700 via-blue-500 to-sky-300 shadow-xl shadow-blue-500/30 flex items-center justify-center">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-transparent to-blue-900/40" />
-                      </div>
-                    </div>
-
-                    {aiMessage && (
-                      <div className="p-3 rounded-xl bg-blue-50/80 border border-blue-100 text-xs text-blue-900 leading-relaxed">
-                        {aiMessage}
-                      </div>
-                    )}
-
-                    <form onSubmit={handleAskAI} className="relative flex items-center">
-                      <input
-                        type="text"
-                        value={aiPrompt}
-                        onChange={(e) => setAiPrompt(e.target.value)}
-                        placeholder="Ask about MSIS issues..."
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-3.5 pr-12 py-2 text-xs text-slate-800 placeholder-slate-400 outline-none focus:border-blue-500 focus:bg-white transition-all"
+                  <div className="relative pt-4 pb-2">
+                    <svg className="w-full h-44 overflow-visible" viewBox="0 0 600 160">
+                      <defs>
+                        <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.25" />
+                          <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.0" />
+                        </linearGradient>
+                      </defs>
+                      <line x1="0" y1="30" x2="600" y2="30" stroke="#f1f5f9" strokeDasharray="3 3" />
+                      <line x1="0" y1="80" x2="600" y2="80" stroke="#f1f5f9" strokeDasharray="3 3" />
+                      <line x1="0" y1="130" x2="600" y2="130" stroke="#f1f5f9" strokeDasharray="3 3" />
+                      <path
+                        d="M 0 120 Q 80 115 150 100 T 300 85 T 450 60 T 600 45 L 600 160 L 0 160 Z"
+                        fill="url(#chartGradient)"
                       />
-                      <button
-                        type="submit"
-                        className="absolute right-1.5 p-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors cursor-pointer"
-                      >
-                        <Send className="h-3 w-3" />
-                      </button>
-                    </form>
-                  </Card>
-                </div>
+                      <path
+                        d="M 0 120 Q 80 115 150 100 T 300 85 T 450 60 T 600 45"
+                        fill="none"
+                        stroke="#3b82f6"
+                        strokeWidth="2.5"
+                      />
+                      <circle cx="300" cy="85" r="5" fill="#2563eb" stroke="#ffffff" strokeWidth="2.5" />
+                    </svg>
+
+                    <div className="flex justify-between text-[11px] font-medium text-slate-400 pt-2 border-t border-slate-100">
+                      <span>Week 1</span>
+                      <span>Week 2</span>
+                      <span>Week 3</span>
+                      <span>Week 4</span>
+                      <span>Current</span>
+                    </div>
+                  </div>
+                </Card>
               </div>
             </div>
           )}
