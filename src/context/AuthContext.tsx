@@ -72,7 +72,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const data = await response.json().catch(() => null);
 
       if (!response.ok || !data || data.status !== 'success') {
-        const errorMsg = data?.message || `Access Denied: The account (${emailToVerify}) is not registered in MSIS records.`;
+        const errorMsg = data?.message || `Error: Your email (${emailToVerify}) is not registered in the institution.`;
         throw new Error(errorMsg);
       }
 
