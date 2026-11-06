@@ -14,16 +14,48 @@ import {
   ShieldCheck,
   ArrowLeft,
   Users,
-  GraduationCap
+  GraduationCap,
+  ChevronDown,
 } from 'lucide-react';
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
-  const { signInWithGoogle, isLoading } = useAuth();
+  const { signInWithGoogle, isLoading, previousAccount, clearPreviousAccount } = useAuth();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [signingIn, setSigningIn] = useState(false);
+  const [avatarError, setAvatarError] = useState(false);
+  const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
   const [googleClientId, setGoogleClientId] = useState<string>(GOOGLE_CLIENT_ID);
   const tokenClientRef = useRef<any>(null);
+  const focusTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Monitor window focus to automatically stop loading if the Google popup is closed
+  const startPopupMonitoring = () => {
+    if (focusTimeoutRef.current) {
+      clearTimeout(focusTimeoutRef.current);
+      focusTimeoutRef.current = null;
+    }
+
+    const handleFocus = () => {
+      // User returned to main window after popup closure.
+      // If no token response arrived within 700ms, the popup was dismissed/closed.
+      focusTimeoutRef.current = setTimeout(() => {
+        setSigningIn(false);
+        window.removeEventListener('focus', handleFocus);
+      }, 700);
+    };
+
+    // Attach after popup launch delay to avoid premature trigger
+    setTimeout(() => {
+      window.addEventListener('focus', handleFocus, { once: true });
+    }, 500);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (focusTimeoutRef.current) clearTimeout(focusTimeoutRef.current);
+    };
+  }, []);
 
   // Fetch dynamic Google Client ID from backend configuration endpoint
   useEffect(() => {
@@ -55,15 +87,22 @@ export const LoginPage: React.FC = () => {
             client_id: activeClientId,
             scope: 'email profile openid',
             callback: async (tokenResponse: any) => {
-              if (tokenResponse.error) {
-                if (tokenResponse.error === 'popup_closed_by_user') {
-                  setErrorMessage('Google Sign-In Error: Sign-in popup was closed before completion.');
-                } else {
+              if (focusTimeoutRef.current) {
+                clearTimeout(focusTimeoutRef.current);
+                focusTimeoutRef.current = null;
+              }
+
+              if (!tokenResponse || tokenResponse.error || !tokenResponse.access_token) {
+                setSigningIn(false);
+                if (
+                  tokenResponse?.error &&
+                  tokenResponse.error !== 'popup_closed_by_user' &&
+                  tokenResponse.error !== 'access_denied'
+                ) {
                   setErrorMessage(
-                    `Google Sign-In Error: ${tokenResponse.error_description || tokenResponse.error}. Please check Authorized JavaScript origins in Google Cloud Console.`
+                    `Google Sign-In Error: ${tokenResponse.error_description || tokenResponse.error}.`
                   );
                 }
-                setSigningIn(false);
                 return;
               }
 
@@ -170,14 +209,19 @@ export const LoginPage: React.FC = () => {
     };
   }, [signInWithGoogle, navigate, googleClientId]);
 
-  const handleContinueWithGoogle = async () => {
+  const handleContinueWithGoogle = async (accountHint?: string, forceChooser: boolean = false) => {
     setErrorMessage(null);
     const activeClientId = googleClientId || GOOGLE_CLIENT_ID;
 
-    // If Google token client is ready, open Google's authentic account chooser
+    // If Google token client is ready, open Google's authentic account chooser or hint
     if (tokenClientRef.current) {
       setSigningIn(true);
-      tokenClientRef.current.requestAccessToken({ prompt: 'select_account' });
+      startPopupMonitoring();
+      if (accountHint && !forceChooser) {
+        tokenClientRef.current.requestAccessToken({ hint: accountHint });
+      } else {
+        tokenClientRef.current.requestAccessToken({ prompt: 'select_account' });
+      }
       return;
     }
 
@@ -185,19 +229,31 @@ export const LoginPage: React.FC = () => {
     const google = (window as any).google;
     if (google?.accounts?.oauth2) {
       setSigningIn(true);
+      startPopupMonitoring();
       try {
         const client = google.accounts.oauth2.initTokenClient({
           client_id: activeClientId,
           scope: 'email profile openid',
           callback: async (tokenResponse: any) => {
-            if (tokenResponse.error) {
-              const friendly = tokenResponse.error === 'popup_closed_by_user'
-                ? 'Google Sign-In Error: Sign-in popup was closed before completion.'
-                : `Google Sign-In Error: ${tokenResponse.error_description || tokenResponse.error}`;
-              setErrorMessage(friendly);
+            if (focusTimeoutRef.current) {
+              clearTimeout(focusTimeoutRef.current);
+              focusTimeoutRef.current = null;
+            }
+
+            if (!tokenResponse || tokenResponse.error || !tokenResponse.access_token) {
               setSigningIn(false);
+              if (
+                tokenResponse?.error &&
+                tokenResponse.error !== 'popup_closed_by_user' &&
+                tokenResponse.error !== 'access_denied'
+              ) {
+                setErrorMessage(
+                  `Google Sign-In Error: ${tokenResponse.error_description || tokenResponse.error}.`
+                );
+              }
               return;
             }
+
             if (tokenResponse.access_token) {
               try {
                 const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
@@ -219,7 +275,11 @@ export const LoginPage: React.FC = () => {
           },
         });
         tokenClientRef.current = client;
-        client.requestAccessToken({ prompt: 'select_account' });
+        if (accountHint && !forceChooser) {
+          client.requestAccessToken({ hint: accountHint });
+        } else {
+          client.requestAccessToken({ prompt: 'select_account' });
+        }
         return;
       } catch (err: any) {
         setSigningIn(false);
@@ -398,46 +458,219 @@ export const LoginPage: React.FC = () => {
               )}
             </AnimatePresence>
 
-            {/* Action: Continue with Google Button */}
-            <div className="space-y-2.5 pt-1">
-              <button
-                type="button"
-                onClick={handleContinueWithGoogle}
-                disabled={signingIn || isLoading}
-                className="w-full h-11 sm:h-12 px-4 rounded-xl bg-white hover:bg-slate-50 text-slate-800 border-2 border-slate-200 hover:border-red-300 font-bold text-xs sm:text-sm shadow-sm flex items-center justify-center gap-3 transition-all cursor-pointer disabled:opacity-70 group whitespace-nowrap"
-              >
-                {signingIn || isLoading ? (
-                  <div className="flex items-center gap-2.5 text-slate-600 whitespace-nowrap">
-                    <div className="h-4 w-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin shrink-0" />
-                    <span>Authenticating credentials...</span>
+            {/* Action: Google Sign-In with Saved Previous Account Profile */}
+            <div className="space-y-2 pt-1">
+              {previousAccount ? (
+                /* Google Personalized Account Selector (Matches Image 2) */
+                <div className="relative">
+                  <div
+                    onClick={() => {
+                      if (!signingIn && !isLoading) {
+                        handleContinueWithGoogle(previousAccount.email, false);
+                      }
+                    }}
+                    className="w-full rounded-2xl bg-white border border-slate-200/90 shadow-xs hover:border-slate-300 hover:bg-slate-50/60 transition-all cursor-pointer flex items-center justify-between p-2.5 sm:p-3 group select-none"
+                    role="button"
+                    tabIndex={0}
+                  >
+                    {/* Left: Avatar + Name + Email */}
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <div className="h-10 w-10 sm:h-11 sm:w-11 rounded-full bg-slate-100 flex items-center justify-center shrink-0 overflow-hidden border border-slate-200/80">
+                        {previousAccount.avatar_url && !avatarError ? (
+                          <img
+                            src={previousAccount.avatar_url}
+                            alt={previousAccount.name}
+                            referrerPolicy="no-referrer"
+                            className="h-full w-full object-cover"
+                            onError={() => setAvatarError(true)}
+                          />
+                        ) : (
+                          <span className="font-bold text-slate-700 text-xs sm:text-sm">
+                            {previousAccount.name
+                              ? previousAccount.name
+                                  .split(' ')
+                                  .filter(Boolean)
+                                  .map((n) => n[0])
+                                  .slice(0, 2)
+                                  .join('')
+                                  .toUpperCase()
+                              : 'G'}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex flex-col min-w-0 text-left">
+                        <span className="text-sm sm:text-base font-bold text-slate-900 truncate group-hover:text-red-700 transition-colors">
+                          {previousAccount.name}
+                        </span>
+                        <span className="text-xs text-slate-500 truncate font-normal">
+                          {previousAccount.email}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Right: Vertical Divider + Google G Icon + Chevron */}
+                    <div className="flex items-center shrink-0 pl-1">
+                      <div className="h-8 w-[1px] bg-slate-200 mx-2.5 sm:mx-3" />
+
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsAccountMenuOpen((prev) => !prev);
+                        }}
+                        className="flex items-center gap-1.5 p-1 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer text-slate-400 hover:text-slate-700"
+                        title="Account options"
+                      >
+                        {/* Google Colorful G SVG */}
+                        <svg className="h-5 w-5 shrink-0" viewBox="0 0 24 24">
+                          <path
+                            fill="#4285F4"
+                            d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                          />
+                          <path
+                            fill="#34A853"
+                            d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                          />
+                          <path
+                            fill="#FBBC05"
+                            d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+                          />
+                          <path
+                            fill="#EA4335"
+                            d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+                          />
+                        </svg>
+
+                        <ChevronDown
+                          className={`h-4 w-4 transition-transform duration-200 ${
+                            isAccountMenuOpen ? 'rotate-180 text-slate-700' : ''
+                          }`}
+                        />
+                      </button>
+                    </div>
                   </div>
-                ) : (
-                  <>
-                    {/* Google G Logo SVG */}
-                    <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24">
-                      <path
-                        fill="#4285F4"
-                        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                      />
-                      <path
-                        fill="#34A853"
-                        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                      />
-                      <path
-                        fill="#FBBC05"
-                        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-                      />
-                      <path
-                        fill="#EA4335"
-                        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-                      />
-                    </svg>
-                    <span className="group-hover:text-red-700 transition-colors whitespace-nowrap">
-                      Continue with Google
-                    </span>
-                  </>
-                )}
-              </button>
+
+                  {/* Connecting Overlay State */}
+                  {(signingIn || isLoading) && (
+                    <div className="absolute inset-0 bg-white/90 backdrop-blur-[1px] rounded-2xl flex items-center justify-between px-3.5 sm:px-4 text-xs font-semibold text-slate-700 border border-slate-200 shadow-xs z-20">
+                      <div className="flex items-center gap-2.5">
+                        <div className="h-4 w-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin shrink-0" />
+                        <span>Authenticating as {previousAccount.name.split(' ')[0]}...</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSigningIn(false);
+                        }}
+                        className="text-[11px] font-bold text-slate-400 hover:text-red-600 px-2 py-1 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Dropdown Options Popover */}
+                  <AnimatePresence>
+                    {isAccountMenuOpen && (
+                      <>
+                        <div
+                          className="fixed inset-0 z-30"
+                          onClick={() => setIsAccountMenuOpen(false)}
+                        />
+                        <motion.div
+                          initial={{ opacity: 0, y: -4, scale: 0.98 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: -4, scale: 0.98 }}
+                          transition={{ duration: 0.15 }}
+                          className="absolute right-0 top-full mt-1.5 w-64 p-1.5 bg-white rounded-2xl border border-slate-200/90 shadow-xl z-40 space-y-1 text-left"
+                        >
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsAccountMenuOpen(false);
+                              handleContinueWithGoogle(undefined, true);
+                            }}
+                            className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-red-700 rounded-xl transition-colors cursor-pointer"
+                          >
+                            <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24">
+                              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                            </svg>
+                            <span>Use another Google account</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsAccountMenuOpen(false);
+                              clearPreviousAccount();
+                            }}
+                            className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-slate-500 hover:bg-red-50 hover:text-red-600 rounded-xl transition-colors cursor-pointer"
+                          >
+                            <span>Remove account from this device</span>
+                          </button>
+                        </motion.div>
+                      </>
+                    )}
+                  </AnimatePresence>
+
+                  {/* Subtle Link to Switch Account Below */}
+                  <div className="pt-1 text-center">
+                    <button
+                      type="button"
+                      onClick={() => handleContinueWithGoogle(undefined, true)}
+                      disabled={signingIn || isLoading}
+                      className="text-xs font-semibold text-slate-500 hover:text-red-600 transition-colors py-0.5 cursor-pointer inline-flex items-center gap-1"
+                    >
+                      <span>Use another Google account</span>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                /* Standard Google Sign-In Button */
+                <button
+                  type="button"
+                  onClick={() => handleContinueWithGoogle(undefined, true)}
+                  disabled={signingIn || isLoading}
+                  className="w-full h-11 sm:h-12 px-4 rounded-xl bg-white hover:bg-slate-50 text-slate-800 border-2 border-slate-200 hover:border-red-300 font-bold text-xs sm:text-sm shadow-sm flex items-center justify-center gap-3 transition-all cursor-pointer disabled:opacity-70 group whitespace-nowrap"
+                >
+                  {signingIn || isLoading ? (
+                    <div className="flex items-center gap-2.5 text-slate-600 whitespace-nowrap">
+                      <div className="h-4 w-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin shrink-0" />
+                      <span>Authenticating credentials...</span>
+                    </div>
+                  ) : (
+                    <>
+                      {/* Google G Logo SVG */}
+                      <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24">
+                        <path
+                          fill="#4285F4"
+                          d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                        />
+                        <path
+                          fill="#34A853"
+                          d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                        />
+                        <path
+                          fill="#FBBC05"
+                          d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+                        />
+                        <path
+                          fill="#EA4335"
+                          d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+                        />
+                      </svg>
+                      <span className="group-hover:text-red-700 transition-colors whitespace-nowrap">
+                        Continue with Google
+                      </span>
+                    </>
+                  )}
+                </button>
+              )}
 
               {/* Permitted Institutional Domain Notice */}
               <div className="p-2 sm:p-2.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between gap-2 text-[11px] text-slate-500">
