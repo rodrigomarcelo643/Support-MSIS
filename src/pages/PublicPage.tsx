@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, type Variants } from 'framer-motion';
 import medicineLogo from '../assets/logo/medicine-logo.png';
+import southweLogo from '../assets/logo/southwe_main.png';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { useAuth } from '../context/AuthContext';
@@ -57,9 +58,10 @@ export const PublicPage: React.FC = () => {
         className="bg-white border-b border-slate-200/80 sticky top-0 z-50"
       >
         <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2.5">
+            <img src={southweLogo} alt="Southwestern University PHINMA" className="h-9 w-9 object-contain" />
             <img src={medicineLogo} alt="MSIS Logo" className="h-9 w-auto object-contain" />
-            <span className="text-lg font-bold text-slate-800 tracking-tight">
+            <span className="text-lg font-bold text-slate-800 tracking-tight pl-1">
               MSIS <span className="text-red-600 font-semibold">| Support</span>
             </span>
           </div>
@@ -88,8 +90,10 @@ export const PublicPage: React.FC = () => {
           className="text-center space-y-4 max-w-2xl mx-auto"
         >
           <motion.div variants={itemVariants} className="flex justify-center mb-2">
-            <div >
-              <img src={medicineLogo} alt="MSIS Logo" className="h-16 w-auto object-contain" />
+            <div className="flex items-center justify-center gap-3.5 p-2 rounded-2xl bg-white border border-slate-200/80 shadow-xs">
+              <img src={southweLogo} alt="Southwestern University PHINMA" className="h-14 w-14 object-contain" />
+              <div className="h-10 w-px bg-slate-200" />
+              <img src={medicineLogo} alt="MSIS Medicine" className="h-14 w-auto object-contain" />
             </div>
           </motion.div>
 
