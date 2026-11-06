@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider } from './context/AuthContext';
 import { PublicPage } from './pages/PublicPage';
 import { LoginPage } from './pages/LoginPage';
+import { AuthCallbackPage } from './pages/AuthCallbackPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { ProtectedRoute } from '../routes/ProtectedRoute/Index';
 import { PublicRoute } from '../routes/PublicRoute/Index';
@@ -17,6 +18,7 @@ function App() {
           {/* Authentication route - Google sign in only */}
           <Route element={<PublicRoute />}>
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/auth/google/callback" element={<AuthCallbackPage />} />
           </Route>
 
           {/* Authenticated Dashboard inspired by the Reference UI */}
