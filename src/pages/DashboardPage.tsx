@@ -5,6 +5,7 @@ import { SuperAdminView } from '../components/dashboard/SuperAdminView';
 import { UserRoleView } from '../components/dashboard/UserRoleView';
 import { Card } from '../components/ui/card';
 import { useAuth } from '../context/AuthContext';
+import { useTickets } from '../context/TicketsContext';
 import type { SupportTicket, UserRole } from '../types';
 import type { UploadedFile } from '../components/ui/file-upload';
 import {
@@ -68,57 +69,14 @@ export const DashboardPage: React.FC = () => {
     });
   };
 
-  // Tickets state categorized by role
-  const [tickets, setTickets] = useState<SupportTicket[]>([
-    {
-      id: 'TK-83009',
-      category: 'Faculty',
-      department: 'MSIS',
-      subject: 'Grade submission portal generates 500 error on CSV export',
-      description: 'When exporting the final semester grades CSV for Section 2, the portal crashes with a 500 internal server error.',
-      status: 'In Progress',
-      attachmentsCount: 2,
-      submittedAt: '15 mins ago',
-      reporterName: 'Dr. Marcus Vance',
-      reporterEmail: 'm.vance@msis.edu',
-    },
-    {
-      id: 'TK-83001',
-      category: 'Student',
-      department: 'Information Systems',
-      subject: 'Session timeout occurs prematurely during online quiz submission',
-      description: 'Logged out after 5 minutes of inactivity despite active timer on the module quiz page.',
-      status: 'Investigating',
-      attachmentsCount: 1,
-      submittedAt: '45 mins ago',
-      reporterName: 'David Kim',
-      reporterEmail: 'd.kim@student.msis.edu',
-    },
-    {
-      id: 'TK-83004',
-      category: 'Secretary',
-      department: 'Academic Affairs',
-      subject: 'Course syllabus document attachment fails to upload',
-      description: 'PDF syllabus files over 2MB fail to upload with "Network request failed" error notification.',
-      status: 'Resolved',
-      attachmentsCount: 1,
-      submittedAt: '2 hours ago',
-      reporterName: 'Sarah Jenkins',
-      reporterEmail: 's.jenkins@msis.edu',
-    },
-    {
-      id: 'TK-83002',
-      category: 'Admin',
-      department: 'Computer Science',
-      subject: 'Role permission cache not invalidating after faculty promotion',
-      description: 'Promoted faculty members still see student-level permissions until manual server cache purge.',
-      status: 'Dispatched',
-      attachmentsCount: 3,
-      submittedAt: '3 hours ago',
-      reporterName: 'Robert Lang',
-      reporterEmail: 'r.lang@admin.msis.edu',
-    },
-  ]);
+  // Dynamic tickets state shared across the application from MySQL database
+  const {
+    tickets,
+    ticketCounts,
+    submitTicket,
+    updateTicketStatus,
+    deleteTicket,
+  } = useTickets();
 
   const handleRoleChange = (newRole: UserRole) => {
     setCurrentRole(newRole);
@@ -130,54 +88,31 @@ export const DashboardPage: React.FC = () => {
   };
 
   const handleStatusChange = (ticketId: string, newStatus: SupportTicket['status']) => {
-    setTickets((prev) =>
-      prev.map((t) => (t.id === ticketId ? { ...t, status: newStatus } : t))
-    );
+    updateTicketStatus(ticketId, newStatus);
   };
 
-  const handleUserSubmitTicket = (data: {
+  const handleDeleteTicket = (ticketId: string) => {
+    deleteTicket(ticketId);
+  };
+
+  const handleUserSubmitTicket = async (data: {
     subject: string;
     description: string;
     files: UploadedFile[];
     department?: string;
   }) => {
-    const departmentLabels: Record<string, string> = {
-      msis: 'MSIS Department',
-      is: 'Information Systems',
-      cs: 'Computer Science',
-      it: 'Information Technology',
-      academic: 'Academic Affairs',
-      registrar: 'Registrar & Admissions',
-      admin: 'Administration',
-    };
-
-    const newTicket: SupportTicket = {
-      id: `TK-${Math.floor(10000 + Math.random() * 90000)}`,
-      category: currentRole === 'Super Admin' ? 'Admin' : currentRole,
-      department: data.department ? (departmentLabels[data.department] || data.department) : `${currentRole} Unit`,
+    await submitTicket({
       subject: data.subject,
       description: data.description,
-      status: 'In Progress',
-      attachmentsCount: data.files.length,
-      submittedAt: 'Just now',
-      reporterName: user?.name || 'MSIS User',
-      reporterEmail: user?.email || 'user@msis.edu',
-    };
-
-    setTickets((prev) => [newTicket, ...prev]);
+      files: data.files,
+      department: data.department,
+      category: (currentRole === 'Super Admin' ? 'Admin' : currentRole) as 'Student' | 'Faculty' | 'Secretary' | 'Admin',
+    });
   };
 
   const handleSignOut = async () => {
     await signOut();
     navigate('/');
-  };
-
-  const ticketCounts = {
-    total: tickets.length,
-    student: tickets.filter((t) => t.category === 'Student').length,
-    faculty: tickets.filter((t) => t.category === 'Faculty').length,
-    secretary: tickets.filter((t) => t.category === 'Secretary').length,
-    admin: tickets.filter((t) => t.category === 'Admin').length,
   };
 
   return (
@@ -196,34 +131,34 @@ export const DashboardPage: React.FC = () => {
       {/* 2. Main Content Canvas */}
       <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
         {/* Top Navbar */}
-        <header className="bg-white border-b border-slate-200/80 px-4 sm:px-6 lg:px-8 py-3.5 sticky top-0 z-20 flex items-center justify-between gap-4 shadow-xs">
-          <div className="flex items-center gap-2">
-            <h1 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight flex items-center gap-2">
-              <span>MSIS Support</span>
-              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-red-50 text-red-700">
+        <header className="bg-white border-b border-slate-200/80 px-3 sm:px-6 lg:px-8 py-2.5 sm:py-3.5 sticky top-0 z-20 flex items-center justify-between gap-2 sm:gap-4 shadow-xs">
+          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+            <h1 className="text-sm sm:text-base md:text-lg font-bold text-slate-900 tracking-tight flex items-center gap-1.5 sm:gap-2 min-w-0">
+              <span className="whitespace-nowrap">MSIS Support</span>
+              <span className="text-[10px] sm:text-xs font-semibold px-2 py-0.5 rounded-full bg-red-50 text-red-700 whitespace-nowrap shrink-0">
                 {currentRole}
               </span>
             </h1>
           </div>
 
-          <div className="flex items-center">
+          <div className="flex items-center shrink-0">
             {/* Notification Bell (Only element remaining on header right) */}
             <button
               type="button"
               onClick={() => setActiveNav('activity')}
-              className="relative h-9 w-9 rounded-xl border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-red-50 hover:text-red-600 transition-colors cursor-pointer"
+              className="relative h-8 w-8 sm:h-9 sm:w-9 rounded-xl border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-red-50 hover:text-red-600 transition-colors cursor-pointer"
               title="Activity & Notifications"
             >
               <Bell className="h-4 w-4" />
               {tickets.length > 0 && (
-                <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-red-600 ring-2 ring-white" />
+                <span className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 h-2 w-2 rounded-full bg-red-600 ring-2 ring-white" />
               )}
             </button>
           </div>
         </header>
 
         {/* Main Content Render Area */}
-        <main className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl w-full mx-auto">
+        <main className="p-3.5 sm:p-6 lg:p-8 space-y-4 sm:space-y-6 max-w-7xl w-full mx-auto pb-24 sm:pb-28 lg:pb-8">
           {/* A. If Super Admin: Render SuperAdminView (Tracks all tickets categorized, cannot submit report) */}
           {currentRole === 'Super Admin' &&
             activeNav !== 'dashboard' &&
@@ -258,6 +193,8 @@ export const DashboardPage: React.FC = () => {
                 onSubmitTicket={handleUserSubmitTicket}
                 activeNav={activeNav}
                 onNavChange={setActiveNav}
+                onStatusChange={handleStatusChange}
+                onDeleteTicket={handleDeleteTicket}
               />
             )}
 
