@@ -42,10 +42,10 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   const isSettingsActive = currentPath.endsWith(`/${roleSlug}/settings`);
 
   return (
-    <div className="lg:hidden fixed bottom-3 inset-x-0 z-40 flex justify-center px-3 sm:px-4 pointer-events-none select-none animate-slideUp">
+    <div className="lg:hidden fixed bottom-2 sm:bottom-3 inset-x-0 z-40 flex justify-center px-2.5 sm:px-4 pointer-events-none select-none animate-slideUp">
       <nav
         aria-label="Mobile Bottom Navigation"
-        className="pointer-events-auto bg-white/95 backdrop-blur-md border border-slate-200/90 shadow-[0_10px_32px_rgba(0,0,0,0.14)] rounded-3xl px-3 sm:px-6 py-1.5 flex items-end justify-between gap-2 sm:gap-6 max-w-md w-full"
+        className="pointer-events-auto bg-white/95 backdrop-blur-md border border-slate-200/90 shadow-[0_10px_32px_rgba(0,0,0,0.14)] rounded-2xl sm:rounded-3xl px-2 sm:px-6 py-1 sm:py-1.5 flex items-end justify-between gap-1 sm:gap-6 max-w-md w-full"
       >
         {/* 1. Dashboard */}
         <button
