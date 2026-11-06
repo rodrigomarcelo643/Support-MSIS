@@ -1,0 +1,15 @@
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # 1. Allow direct access to /api/ without rewriting to React index.html
+  RewriteRule ^api/ - [L]
+
+  # 2. Allow direct access to real existing files or directories
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # 3. Route all client-side SPA routes (e.g. /login, /dashboard) to index.html
+  RewriteRule ^ index.html [L]
+</IfModule>

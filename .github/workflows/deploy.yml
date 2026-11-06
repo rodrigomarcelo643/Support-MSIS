@@ -1,0 +1,50 @@
+name: Deploy to Hostinger
+
+on:
+  push:
+    branches:
+      - main # Change to your deployment branch if different
+
+jobs:
+  build-and-deploy:
+    name: Build & Deploy to Hostinger
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Frontend
+        env:
+          VITE_BACKEND_URL: ${{ secrets.VITE_BACKEND_URL || 'https://support.swu-som.com' }}
+        run: pnpm build
+
+      - name: Prepare Deployment Files
+        run: |
+          # Bundle the PHP API inside dist/ so everything syncs in a single step
+          cp -r api dist/api
+
+      - name: Deploy via SSH to Hostinger
+        uses: easingthemes/ssh-deploy@v5.0.3
+        with:
+          SSH_PRIVATE_KEY: ${{ secrets.HOSTINGER_SSH_KEY }}
+          REMOTE_HOST: ${{ secrets.HOSTINGER_HOST }}
+          REMOTE_USER: ${{ secrets.HOSTINGER_USER }}
+          REMOTE_PORT: ${{ secrets.HOSTINGER_PORT || 65002 }}
+          SOURCE: "dist/"
+          TARGET: ${{ secrets.HOSTINGER_TARGET_PATH || 'public_html/' }}
+          EXCLUDE: "/.git/, /node_modules/"
