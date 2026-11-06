@@ -23,7 +23,7 @@ import {
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
-  const { signInWithGoogle, isLoading, previousAccount, clearPreviousAccount } = useAuth();
+  const { signInWithGoogle, previousAccount, clearPreviousAccount } = useAuth();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [unregisteredAccount, setUnregisteredAccount] = useState<{
     email: string;
@@ -36,6 +36,7 @@ export const LoginPage: React.FC = () => {
   const [googleClientId, setGoogleClientId] = useState<string>(GOOGLE_CLIENT_ID);
   const tokenClientRef = useRef<any>(null);
   const focusTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isAuthenticatingRef = useRef<boolean>(false);
 
   // Close unregistered error modal on Escape key press
   useEffect(() => {
@@ -50,7 +51,7 @@ export const LoginPage: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [unregisteredAccount]);
 
-  const handleAuthError = (err: any, account: { email: string; name?: string; avatar_url?: string }) => {
+  const handleAuthError = (err: any, account: { email?: string; name?: string; avatar_url?: string }) => {
     const msg = err?.message || 'Error: Your email is not registered in the institution.';
     const isNotRegistered =
       msg.toLowerCase().includes('not registered') ||
@@ -61,8 +62,8 @@ export const LoginPage: React.FC = () => {
     if (isNotRegistered) {
       setErrorMessage(null);
       setUnregisteredAccount({
-        email: account.email,
-        name: account.name,
+        email: account.email || 'Unregistered Account',
+        name: account.name || 'Google User',
         avatar_url: account.avatar_url,
       });
     } else {
@@ -70,18 +71,22 @@ export const LoginPage: React.FC = () => {
     }
   };
 
-  // Monitor window focus to automatically stop loading if the Google popup is closed
+  // Monitor window focus to automatically stop loading if the Google popup is closed without completing
   const startPopupMonitoring = () => {
+    isAuthenticatingRef.current = false;
     if (focusTimeoutRef.current) {
       clearTimeout(focusTimeoutRef.current);
       focusTimeoutRef.current = null;
     }
 
     const handleFocus = () => {
-      // User returned to main window after popup closure.
-      // If no token response arrived within 700ms, the popup was dismissed/closed.
+      // If authenticating has already started (token received), do not cancel!
+      if (isAuthenticatingRef.current) return;
+
       focusTimeoutRef.current = setTimeout(() => {
-        setSigningIn(false);
+        if (!isAuthenticatingRef.current) {
+          setSigningIn(false);
+        }
         window.removeEventListener('focus', handleFocus);
       }, 700);
     };
@@ -148,6 +153,7 @@ export const LoginPage: React.FC = () => {
               }
 
               if (tokenResponse.access_token) {
+                isAuthenticatingRef.current = true;
                 let profile: any = null;
                 try {
                   setSigningIn(true);
@@ -180,6 +186,7 @@ export const LoginPage: React.FC = () => {
                   });
                 } finally {
                   setSigningIn(false);
+                  isAuthenticatingRef.current = false;
                 }
               }
             },
@@ -196,6 +203,7 @@ export const LoginPage: React.FC = () => {
             client_id: activeClientId,
             callback: async (response: any) => {
               if (response.credential) {
+                isAuthenticatingRef.current = true;
                 let payload: any = null;
                 try {
                   setSigningIn(true);
@@ -224,6 +232,7 @@ export const LoginPage: React.FC = () => {
                   });
                 } finally {
                   setSigningIn(false);
+                  isAuthenticatingRef.current = false;
                 }
               }
             },
@@ -305,6 +314,7 @@ export const LoginPage: React.FC = () => {
             }
 
             if (tokenResponse.access_token) {
+              isAuthenticatingRef.current = true;
               let profile: any = null;
               try {
                 const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
@@ -325,6 +335,7 @@ export const LoginPage: React.FC = () => {
                 });
               } finally {
                 setSigningIn(false);
+                isAuthenticatingRef.current = false;
               }
             }
           },
@@ -520,7 +531,7 @@ export const LoginPage: React.FC = () => {
                 <div className="relative">
                   <div
                     onClick={() => {
-                      if (!signingIn && !isLoading) {
+                      if (!signingIn) {
                         handleContinueWithGoogle(previousAccount.email, false);
                       }
                     }}
@@ -607,7 +618,7 @@ export const LoginPage: React.FC = () => {
                   </div>
 
                   {/* Connecting Overlay State */}
-                  {(signingIn || isLoading) && (
+                  {signingIn && (
                     <div className="absolute inset-0 bg-white/90 backdrop-blur-[1px] rounded-2xl flex items-center justify-between px-3.5 sm:px-4 text-xs font-semibold text-slate-700 border border-slate-200 shadow-xs z-20">
                       <div className="flex items-center gap-2.5">
                         <div className="h-4 w-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin shrink-0" />
@@ -678,7 +689,7 @@ export const LoginPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => handleContinueWithGoogle(undefined, true)}
-                      disabled={signingIn || isLoading}
+                      disabled={signingIn}
                       className="text-xs font-semibold text-slate-500 hover:text-red-600 transition-colors py-0.5 cursor-pointer inline-flex items-center gap-1"
                     >
                       <span>Use another Google account</span>
@@ -690,10 +701,10 @@ export const LoginPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => handleContinueWithGoogle(undefined, true)}
-                  disabled={signingIn || isLoading}
+                  disabled={signingIn}
                   className="w-full h-11 sm:h-12 px-4 rounded-xl bg-white hover:bg-slate-50 text-slate-800 border-2 border-slate-200 hover:border-red-300 font-bold text-xs sm:text-sm shadow-sm flex items-center justify-center gap-3 transition-all cursor-pointer disabled:opacity-70 group whitespace-nowrap"
                 >
-                  {signingIn || isLoading ? (
+                  {signingIn ? (
                     <div className="flex items-center gap-2.5 text-slate-600 whitespace-nowrap">
                       <div className="h-4 w-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin shrink-0" />
                       <span>Authenticating credentials...</span>
