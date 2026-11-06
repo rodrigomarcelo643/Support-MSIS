@@ -28,9 +28,28 @@ export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
 
-  // Active Role in the Portal (Defaults to Super Admin for comprehensive tracking)
-  const [currentRole, setCurrentRole] = useState<UserRole>('Super Admin');
-  const [activeNav, setActiveNav] = useState<string>('all-tickets');
+  // Active Role in the Portal (Defaults to detected role from database)
+  const [currentRole, setCurrentRole] = useState<UserRole>(() => {
+    if (user?.role && (['Admin', 'Faculty', 'Student', 'Secretary', 'Super Admin'] as string[]).includes(user.role)) {
+      return user.role as UserRole;
+    }
+    return 'Admin';
+  });
+  const [activeNav, setActiveNav] = useState<string>(() => {
+    if (user?.role === 'Super Admin') return 'all-tickets';
+    return 'my-tickets';
+  });
+
+  React.useEffect(() => {
+    if (user?.role && (['Admin', 'Faculty', 'Student', 'Secretary', 'Super Admin'] as string[]).includes(user.role)) {
+      setCurrentRole(user.role as UserRole);
+      if (user.role === 'Super Admin') {
+        setActiveNav('all-tickets');
+      } else {
+        setActiveNav('my-tickets');
+      }
+    }
+  }, [user?.role]);
 
   // Persistent Sidebar State in localStorage (Stored collapse state)
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(() => {
