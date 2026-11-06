@@ -122,62 +122,57 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const signInWithGoogle = async (googleEmail: string, googleName?: string, googleAvatar?: string): Promise<AuthUser> => {
-    setIsLoading(true);
-    try {
-      const emailToVerify = (googleEmail || '').trim();
-      if (!emailToVerify) {
-        throw new Error('Google account email is missing.');
-      }
-
-      const response = await fetch(`${BACKEND_URL}/api/v1/auth/google_login.php`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: JSON.stringify({
-          email: emailToVerify,
-          name: googleName || emailToVerify.split('@')[0],
-          avatar_url: googleAvatar || '',
-        }),
-      });
-
-      const data = await response.json().catch(() => null);
-
-      if (!response.ok || !data || data.status !== 'success') {
-        const errorMsg = data?.message || `Error: Your email (${emailToVerify}) is not registered in the institution.`;
-        throw new Error(errorMsg);
-      }
-
-      const authenticatedUser: AuthUser = {
-        id: data.user.id,
-        email: data.user.email,
-        name: data.user.name,
-        role: data.user.role,
-        department: data.user.department,
-        avatar_url: data.user.avatar_url || googleAvatar || '',
-      };
-
-      setUser(authenticatedUser);
-      localStorage.setItem('msis_auth_user', JSON.stringify(authenticatedUser));
-
-      // Persist previous Google account profile for fast re-login and UI display
-      const prevAccount: PreviousGoogleAccount = {
-        id: authenticatedUser.id,
-        email: authenticatedUser.email,
-        name: authenticatedUser.name,
-        avatar_url: authenticatedUser.avatar_url,
-        role: authenticatedUser.role,
-        department: authenticatedUser.department,
-        lastLoginAt: new Date().toISOString(),
-      };
-      setPreviousAccount(prevAccount);
-      localStorage.setItem('msis_previous_google_account', JSON.stringify(prevAccount));
-
-      return authenticatedUser;
-    } finally {
-      setIsLoading(false);
+    const emailToVerify = (googleEmail || '').trim();
+    if (!emailToVerify) {
+      throw new Error('Google account email is missing.');
     }
+
+    const response = await fetch(`${BACKEND_URL}/api/v1/auth/google_login.php`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({
+        email: emailToVerify,
+        name: googleName || emailToVerify.split('@')[0],
+        avatar_url: googleAvatar || '',
+      }),
+    });
+
+    const data = await response.json().catch(() => null);
+
+    if (!response.ok || !data || data.status !== 'success') {
+      const errorMsg = data?.message || `Error: Your email (${emailToVerify}) is not registered in the institution.`;
+      throw new Error(errorMsg);
+    }
+
+    const authenticatedUser: AuthUser = {
+      id: data.user.id,
+      email: data.user.email,
+      name: data.user.name,
+      role: data.user.role,
+      department: data.user.department,
+      avatar_url: data.user.avatar_url || googleAvatar || '',
+    };
+
+    setUser(authenticatedUser);
+    localStorage.setItem('msis_auth_user', JSON.stringify(authenticatedUser));
+
+    // Persist previous Google account profile for fast re-login and UI display
+    const prevAccount: PreviousGoogleAccount = {
+      id: authenticatedUser.id,
+      email: authenticatedUser.email,
+      name: authenticatedUser.name,
+      avatar_url: authenticatedUser.avatar_url,
+      role: authenticatedUser.role,
+      department: authenticatedUser.department,
+      lastLoginAt: new Date().toISOString(),
+    };
+    setPreviousAccount(prevAccount);
+    localStorage.setItem('msis_previous_google_account', JSON.stringify(prevAccount));
+
+    return authenticatedUser;
   };
 
   const signOut = async () => {
