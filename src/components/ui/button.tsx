@@ -32,17 +32,17 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
 
     const variants = {
       primary:
-        'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500/20 shadow-xs active:bg-blue-800',
+        'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500/20 shadow-xs active:bg-red-800',
       secondary:
         'bg-slate-100 text-slate-800 hover:bg-slate-200 focus:ring-slate-200 active:bg-slate-300',
       outline:
         'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-300 focus:ring-slate-100 active:bg-slate-100 shadow-xs',
       destructive:
-        'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500/20 shadow-xs active:bg-red-800',
+        'bg-red-700 text-white hover:bg-red-800 focus:ring-red-600/20 shadow-xs active:bg-red-900',
       ghost:
         'bg-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-900 focus:ring-slate-100',
       link:
-        'bg-transparent text-blue-600 hover:underline underline-offset-4 focus:ring-blue-500 p-0 h-auto font-medium shadow-none active:scale-100',
+        'bg-transparent text-red-600 hover:underline underline-offset-4 focus:ring-red-500 p-0 h-auto font-medium shadow-none active:scale-100',
       success:
         'bg-emerald-600 text-white hover:bg-emerald-700 focus:ring-emerald-500/20 shadow-xs active:bg-emerald-800',
     };

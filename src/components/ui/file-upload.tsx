@@ -128,8 +128,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         onClick={() => inputRef.current?.click()}
         className={`group relative flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-2xl cursor-pointer transition-all ${
           isDragging
-            ? 'border-blue-500 bg-blue-50/40 scale-[0.99]'
-            : 'border-slate-200 hover:border-blue-400 bg-slate-50/50 hover:bg-white'
+            ? 'border-red-500 bg-red-50/40 scale-[0.99]'
+            : 'border-slate-200 hover:border-red-400 bg-slate-50/50 hover:bg-white'
         }`}
       >
         <input
@@ -142,13 +142,13 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         />
 
         <div className="flex flex-col items-center text-center space-y-2">
-          <div className="h-11 w-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center group-hover:scale-105 transition-transform shadow-xs">
+          <div className="h-11 w-11 rounded-xl bg-red-50 text-red-600 flex items-center justify-center group-hover:scale-105 transition-transform shadow-xs">
             <UploadCloud className="h-6 w-6" />
           </div>
 
           <div className="space-y-0.5">
             <p className="text-xs font-semibold text-slate-800">
-              <span className="text-blue-600 underline underline-offset-2">Click to upload</span> or drag and drop
+              <span className="text-red-600 underline underline-offset-2">Click to upload</span> or drag and drop
             </p>
             <p className="text-[11px] text-slate-400">
               PDF, DOC, DOCX, TXT, PNG, or JPG (up to {maxSizeMB}MB)

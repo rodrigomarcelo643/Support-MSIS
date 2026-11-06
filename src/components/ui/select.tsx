@@ -48,11 +48,11 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
 
     const variantStyles = {
       default:
-        'border border-slate-200 bg-white text-slate-800 shadow-xs focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10',
+        'border border-slate-200 bg-white text-slate-800 shadow-xs focus:border-red-500 focus:ring-2 focus:ring-red-500/10',
       filled:
-        'border-transparent bg-slate-100 text-slate-800 hover:bg-slate-200/60 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10',
+        'border-transparent bg-slate-100 text-slate-800 hover:bg-slate-200/60 focus:bg-white focus:border-red-500 focus:ring-2 focus:ring-red-500/10',
       outline:
-        'border-2 border-slate-200 bg-white text-slate-800 hover:border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10',
+        'border-2 border-slate-200 bg-white text-slate-800 hover:border-slate-300 focus:border-red-500 focus:ring-2 focus:ring-red-500/10',
     };
 
     const leftPadding = leftIcon
