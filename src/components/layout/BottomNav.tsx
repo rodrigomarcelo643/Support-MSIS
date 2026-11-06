@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useTickets } from '../../context/TicketsContext';
 import type { UserRole } from '../../types';
 import {
   LayoutGrid,
@@ -25,13 +26,25 @@ interface BottomNavProps {
 export const BottomNav: React.FC<BottomNavProps> = ({
   currentRole,
   roleSlug,
-  ticketCounts,
+  ticketCounts: _ticketCounts,
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const currentPath = location.pathname;
 
   const isSuperAdmin = currentRole === 'Super Admin';
+
+  const { tickets, getTicketsForRole } = useTickets();
+  const userTickets = isSuperAdmin ? tickets : getTicketsForRole(currentRole);
+
+  const userActivityLogsCount = React.useMemo(() => {
+    return userTickets.reduce((acc, t) => {
+      let events = 1;
+      if (t.status && t.status !== 'In Progress') events += 1;
+      if (t.supportMessage) events += 1;
+      return acc + events;
+    }, 0);
+  }, [userTickets]);
 
   const isDashboardActive =
     currentPath.endsWith(`/${roleSlug}/dashboard`) || currentPath === `/${roleSlug}`;
@@ -166,7 +179,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
                   : 'text-slate-400 group-hover:text-slate-600'
               }`}
             />
-            {ticketCounts.total > 0 && (
+            {userActivityLogsCount > 0 && (
               <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-red-600 ring-2 ring-white" />
             )}
           </div>
