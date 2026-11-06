@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import southweLogo from '../assets/logo/southwe_main.png';
 import medicineLogo from '../assets/logo/medicine-logo.png';
-import { Button } from '../components/ui/button';
-import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
 import { useAuth } from '../context/AuthContext';
 import { BACKEND_URL, GOOGLE_CLIENT_ID } from '../lib/config';
 import {
@@ -12,6 +11,10 @@ import {
   CheckCircle2,
   AlertCircle,
   Lock,
+  ShieldCheck,
+  ArrowLeft,
+  Users,
+  GraduationCap
 } from 'lucide-react';
 
 export const LoginPage: React.FC = () => {
@@ -232,74 +235,158 @@ export const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#f4f6fa] flex items-center justify-center p-4 sm:p-6 antialiased selection:bg-red-100">
-      <motion.div
-        initial={{ opacity: 0, y: 18, scale: 0.98 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.45, ease: 'easeOut' }}
-        className="w-full max-w-sm"
-      >
-        <Card variant="default" className="bg-white border-slate-200/90 shadow-[0_8px_30px_rgba(0,0,0,0.04)] rounded-3xl overflow-hidden">
-          <CardHeader className="text-center pb-2 pt-8">
-            <motion.div
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: 0.1, duration: 0.35, ease: 'easeOut' }}
-              className="flex justify-center mb-3"
-            >
-              <div>
+    <div className="h-screen max-h-screen bg-[#f4f6fa] relative flex flex-col justify-between text-slate-800 antialiased selection:bg-red-100 overflow-hidden">
+      {/* Background Ambient Radial Glow */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-80 bg-gradient-to-b from-red-100/40 via-rose-50/20 to-transparent pointer-events-none -z-10 blur-3xl" />
+
+      {/* Top Simple Navigation Header */}
+      <header className="max-w-5xl w-full mx-auto px-4 py-2 sm:py-3 flex items-center justify-between shrink-0">
+        <Link
+          to="/"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-red-600 transition-colors py-1 px-2.5 rounded-xl hover:bg-white/80"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          <span>Return to Portal</span>
+        </Link>
+
+        <div className="flex items-center gap-2 text-[11px] font-semibold text-slate-500">
+          <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
+          <span className="hidden sm:inline">Official MSIS | School of Medicine Support</span>
+        </div>
+      </header>
+
+      {/* Main Dual-Column Showcase Card */}
+      <main className="flex-1 flex items-center justify-center p-3 sm:p-4 min-h-0">
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: 'easeOut' }}
+          className="w-full max-w-4xl max-h-full bg-white rounded-3xl border border-slate-200/90 shadow-[0_15px_40px_rgba(0,0,0,0.05)] overflow-hidden grid grid-cols-1 lg:grid-cols-12"
+        >
+          {/* Left Column: Institutional Value & Capabilities Panel */}
+          <div className="hidden lg:flex lg:col-span-5 bg-gradient-to-br from-red-700 via-red-800 to-rose-950 text-white p-6 sm:p-7 flex-col justify-between relative overflow-hidden">
+            {/* Ambient Background Circles */}
+            <div className="absolute -right-16 -top-16 w-56 h-56 rounded-full bg-white/5 blur-2xl pointer-events-none" />
+            <div className="absolute -left-12 -bottom-12 w-48 h-48 rounded-full bg-red-500/10 blur-2xl pointer-events-none" />
+
+            <div className="space-y-4 relative z-10">
+              {/* Institution Seal & Pill Badge */}
+              <div className="flex items-center gap-2.5">
+                <div className="h-11 w-11 rounded-2xl bg-white p-1 shadow-sm flex items-center justify-center shrink-0">
+                  <img
+                    src={southweLogo}
+                    alt="Southwestern University PHINMA"
+                    className="h-9 w-9 object-contain"
+                  />
+                </div>
+                <div className="h-11 w-11 rounded-2xl bg-white p-1 shadow-sm flex items-center justify-center shrink-0">
+                  <img
+                    src={medicineLogo}
+                    alt="School of Medicine"
+                    className="h-9 w-auto object-contain"
+                  />
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-red-200 block">
+                    MSIS • School of Medicine
+                  </span>
+                  <span className="text-xs font-extrabold text-white">
+                    Support & Tracking
+                  </span>
+                </div>
+              </div>
+
+              {/* Headline */}
+              <div className="space-y-1.5">
+                <h2 className="text-lg sm:text-xl font-black tracking-tight text-white leading-snug">
+                  Medical Systems & Information Services
+                </h2>
+                <p className="text-[11px] text-red-100/90 leading-relaxed">
+                  Dedicated bug reporting, system diagnostics, and issue tracking portal for School of Medicine applications.
+                </p>
+              </div>
+
+              {/* 3 Value Pillars */}
+              <div className="space-y-2 pt-1">
+                <div className="flex items-start gap-2.5 p-2.5 rounded-xl bg-white/10 backdrop-blur-xs border border-white/10">
+                  <div className="h-6 w-6 rounded-lg bg-white/20 text-white flex items-center justify-center shrink-0 mt-0.5">
+                    <Zap className="h-3 w-3 text-white" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-white">Bug & Issue Triage</h4>
+                    <p className="text-[10px] text-red-100/80 leading-normal">
+                      Rapid technical triage and debugging for School of Medicine applications.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-2.5 p-2.5 rounded-xl bg-white/10 backdrop-blur-xs border border-white/10">
+                  <div className="h-6 w-6 rounded-lg bg-white/20 text-white flex items-center justify-center shrink-0 mt-0.5">
+                    <Users className="h-3 w-3 text-white" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-white">Role-Based Portals</h4>
+                    <p className="text-[10px] text-red-100/80 leading-normal">
+                      Dedicated consoles for Students, Faculty, Staff, and Administrators.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-2.5 p-2.5 rounded-xl bg-white/10 backdrop-blur-xs border border-white/10">
+                  <div className="h-6 w-6 rounded-lg bg-white/20 text-white flex items-center justify-center shrink-0 mt-0.5">
+                    <CheckCircle2 className="h-3 w-3 text-white" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-white">Live Bug Status Tracking</h4>
+                    <p className="text-[10px] text-red-100/80 leading-normal">
+                      Transparent status updates from report submission to bug resolution.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom Security Note */}
+            <div className="pt-3 border-t border-white/15 relative z-10 flex items-center justify-between text-[10px] text-red-200">
+              <span className="flex items-center gap-1.5 font-medium">
+                <Lock className="h-3 w-3" />
+                256-bit SSL Encrypted
+              </span>
+              <span className="font-semibold text-white">v1.0.0</span>
+            </div>
+          </div>
+
+          {/* Right Column: Google Sign-in & Authentication Portal */}
+          <div className="lg:col-span-7 p-6 sm:p-8 lg:p-9 flex flex-col justify-center bg-white space-y-4">
+            {/* Header */}
+            <div>
+              <div className="flex items-center justify-between gap-3 mb-2">
                 <img
                   src={medicineLogo}
-                  alt="MSIS Logo"
-                  className="h-16 w-auto object-contain"
+                  alt="MSIS Medicine"
+                  className="h-10 w-auto object-contain"
                 />
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-red-50 text-red-700 text-[11px] font-bold border border-red-100">
+                  <span>Sign In</span>
+                </div>
               </div>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.15, duration: 0.35, ease: 'easeOut' }}
-            >
-              <CardTitle className="text-xl font-bold text-slate-800">
-                MSIS <span className="text-red-600 font-semibold">| Support</span>
-              </CardTitle>
-              <p className="text-xs text-slate-500 mt-1.5 max-w-[260px] mx-auto leading-relaxed">
-                Centralized support desk for submitting and tracking technical requests.
+              <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+                <span>MSIS</span>
+                <span className="text-red-600">Support</span>
+              </h1>
+              <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                Authenticate with your institutional Google account to access your School of Medicine support workspace.
               </p>
-            </motion.div>
-          </CardHeader>
+            </div>
 
-          <CardContent className="space-y-5 pt-3 pb-8 px-6 sm:px-8">
-            {/* Feature Highlights */}
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2, duration: 0.35, ease: 'easeOut' }}
-              className="grid grid-cols-3 gap-2 py-1"
-            >
-              <div className="p-2 rounded-xl bg-slate-50 border border-slate-100 text-center space-y-0.5">
-                <Zap className="h-3.5 w-3.5 text-red-600 mx-auto" />
-                <span className="text-[10px] font-bold text-slate-700 block">Fast Triage</span>
-              </div>
-              <div className="p-2 rounded-xl bg-slate-50 border border-slate-100 text-center space-y-0.5">
-                <Paperclip className="h-3.5 w-3.5 text-indigo-600 mx-auto" />
-                <span className="text-[10px] font-bold text-slate-700 block">Upload Files</span>
-              </div>
-              <div className="p-2 rounded-xl bg-slate-50 border border-slate-100 text-center space-y-0.5">
-                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 mx-auto" />
-                <span className="text-[10px] font-bold text-slate-700 block">Live Status</span>
-              </div>
-            </motion.div>
-
-            {/* Error Banner when email is not found in database or auth fails */}
+            {/* Error Banner when email is not registered or auth fails */}
             <AnimatePresence>
               {errorMessage && (
                 <motion.div
                   initial={{ opacity: 0, y: -6, height: 0 }}
                   animate={{ opacity: 1, y: 0, height: 'auto' }}
                   exit={{ opacity: 0, y: -6, height: 0 }}
-                  className="p-3 rounded-2xl bg-red-50 border border-red-200/90 text-red-700 text-xs flex items-start gap-2.5 overflow-hidden"
+                  className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-start gap-2 overflow-hidden shadow-xs"
                 >
                   <AlertCircle className="h-4 w-4 shrink-0 text-red-600 mt-0.5" />
                   <div className="flex-1 leading-relaxed font-medium">
@@ -309,59 +396,83 @@ export const LoginPage: React.FC = () => {
               )}
             </AnimatePresence>
 
-            {/* Continue with Google Button Only */}
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.25, duration: 0.35, ease: 'easeOut' }}
-              whileHover={{ scale: 1.01 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <Button
+            {/* Action: Continue with Google Button */}
+            <div className="space-y-2.5 pt-1">
+              <button
                 type="button"
-                variant="outline"
-                size="md"
-                fullWidth
                 onClick={handleContinueWithGoogle}
-                isLoading={signingIn || isLoading}
-                className="bg-white hover:bg-slate-50 text-slate-800 border-slate-300 hover:border-slate-400 font-semibold shadow-xs flex items-center justify-center gap-3 h-12 text-sm rounded-xl cursor-pointer transition-all"
+                disabled={signingIn || isLoading}
+                className="w-full h-12 px-4 rounded-xl bg-white hover:bg-slate-50 text-slate-800 border-2 border-slate-200 hover:border-red-300 font-bold text-xs sm:text-sm shadow-sm flex items-center justify-center gap-3 transition-all cursor-pointer disabled:opacity-70 group"
               >
-                {!signingIn && !isLoading && (
-                  <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24">
-                    <path
-                      fill="#4285F4"
-                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                    />
-                    <path
-                      fill="#34A853"
-                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                    />
-                    <path
-                      fill="#FBBC05"
-                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-                    />
-                    <path
-                      fill="#EA4335"
-                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-                    />
-                  </svg>
+                {signingIn || isLoading ? (
+                  <div className="flex items-center gap-2.5 text-slate-600">
+                    <div className="h-4 w-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+                    <span>Authenticating credentials...</span>
+                  </div>
+                ) : (
+                  <>
+                    {/* Google G Logo SVG */}
+                    <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24">
+                      <path
+                        fill="#4285F4"
+                        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                      />
+                      <path
+                        fill="#34A853"
+                        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                      />
+                      <path
+                        fill="#FBBC05"
+                        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+                      />
+                      <path
+                        fill="#EA4335"
+                        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+                      />
+                    </svg>
+                    <span className="group-hover:text-red-700 transition-colors">
+                      Continue with Google
+                    </span>
+                  </>
                 )}
-                <span>Continue with Google</span>
-              </Button>
-            </motion.div>
+              </button>
 
-            {/* Footer security note */}
-            <div className="pt-2 text-center">
-              <span className="text-[11px] text-slate-400 flex items-center justify-center gap-1.5">
-                <Lock className="h-3 w-3 text-slate-400" />
-                <span>Authorized Institutional Access Only</span>
-              </span>
+              {/* Permitted Institutional Domain Notice */}
+              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between gap-2 text-[11px] text-slate-500">
+                <div className="flex items-center gap-1.5 truncate">
+                  <GraduationCap className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                  <span className="truncate">Permitted: @swu.phinmaed.com or registered account</span>
+                </div>
+                <span className="font-semibold text-slate-700 shrink-0">Single Sign-On</span>
+              </div>
             </div>
-          </CardContent>
-        </Card>
-      </motion.div>
+
+            {/* Feature Tags Row */}
+            <div className="grid grid-cols-3 gap-2 pt-1">
+              <div className="p-2 rounded-xl bg-slate-50 border border-slate-100 text-center">
+                <Zap className="h-3.5 w-3.5 text-red-600 mx-auto mb-0.5" />
+                <span className="text-[10px] font-bold text-slate-700 block">Fast Triage</span>
+              </div>
+              <div className="p-2 rounded-xl bg-slate-50 border border-slate-100 text-center">
+                <Paperclip className="h-3.5 w-3.5 text-indigo-600 mx-auto mb-0.5" />
+                <span className="text-[10px] font-bold text-slate-700 block">Upload Files</span>
+              </div>
+              <div className="p-2 rounded-xl bg-slate-50 border border-slate-100 text-center">
+                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 mx-auto mb-0.5" />
+                <span className="text-[10px] font-bold text-slate-700 block">Live Updates</span>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      </main>
+
+      {/* Subtle Bottom Credit */}
+      <footer className="py-2 text-center text-[11px] text-slate-400 shrink-0">
+        <p>© 2026 MSIS | School of Medicine Support</p>
+      </footer>
     </div>
   );
 };
 
 export default LoginPage;
+
