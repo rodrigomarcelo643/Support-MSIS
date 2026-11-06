@@ -2,14 +2,29 @@
   RewriteEngine On
   RewriteBase /
 
-  # 1. Allow direct access to /api/ without rewriting to React index.html
+  # 1. Deny direct public access to database connection & sensitive files
+  RewriteRule ^api/v1/connection\.php$ - [F,L]
+  RewriteRule \.(env|git|log)$ - [F,L]
+
+  # 2. Allow direct access to valid /api/ endpoints without rewriting to React index.html
   RewriteRule ^api/ - [L]
 
-  # 2. Allow direct access to real existing files or directories
+  # 3. Allow direct access to real existing files or directories
   RewriteCond %{REQUEST_FILENAME} -f [OR]
   RewriteCond %{REQUEST_FILENAME} -d
   RewriteRule ^ - [L]
 
-  # 3. Route all client-side SPA routes (e.g. /login, /dashboard) to index.html
+  # 4. Route all client-side SPA routes (e.g. /login, /dashboard) to index.html
   RewriteRule ^ index.html [L]
 </IfModule>
+
+# Block access to connection files across any directory
+<FilesMatch "^(connection\.php|\.env)">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Order Allow,Deny
+    Deny from all
+  </IfModule>
+</FilesMatch>
