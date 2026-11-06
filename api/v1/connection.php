@@ -117,22 +117,22 @@ $dbname = $envConfig['DB_DATABASE'] ?? $envConfig['DB_NAME'] ?? "u886220933_msis
 $username = $envConfig['DB_USERNAME'] ?? $envConfig['DB_USER'] ?? "u886220933_msis";
 $password = $envConfig['DB_PASSWORD'] ?? $envConfig['DB_PASS'] ?? "Msis12345";
 
-// Establish mysqli connection
-$conn = new mysqli($host, $username, $password, $dbname);
+// Establish mysqli connection with safe exception handling
+try {
+    mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+    $conn = new mysqli($host, $username, $password, $dbname);
+    
+    // Set character set to utf8mb4 for unicode and emojis support
+    $conn->set_charset("utf8mb4");
 
-// Verify connection
-if ($conn->connect_error) {
+    // Set timezone to Philippines (Asia/Manila)
+    date_default_timezone_set('Asia/Manila');
+    @$conn->query("SET time_zone = '+08:00'");
+} catch (Throwable $e) {
     http_response_code(500);
     echo json_encode([
         "status" => "error",
-        "message" => "Database connection failed: " . $conn->connect_error
+        "message" => "Database connection failed: " . $e->getMessage()
     ]);
     exit;
 }
-
-// Set character set to utf8mb4 for unicode and emojis support
-$conn->set_charset("utf8mb4");
-
-// Set timezone to Philippines (Asia/Manila)
-date_default_timezone_set('Asia/Manila');
-$conn->query("SET time_zone = '+08:00'");
