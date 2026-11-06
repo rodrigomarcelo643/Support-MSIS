@@ -55,7 +55,7 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
     switch (category) {
       case 'Student':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700">
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-red-50 text-red-700">
             <GraduationCap className="h-3 w-3" />
             <span>Student</span>
           </span>
@@ -95,7 +95,7 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
           <div>
             <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
               Super Admin Central Console
-              <span className="text-[10px] font-semibold bg-[#f4fa74] text-slate-900 px-2 py-0.5 rounded-full">
+              <span className="text-[10px] font-semibold bg-red-50 text-red-700 border border-red-200/60 px-2 py-0.5 rounded-full">
                 Core Tracking
               </span>
             </h2>
@@ -116,7 +116,7 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
         <Card variant="default" className="p-4 bg-white border-slate-200/80 rounded-2xl shadow-xs">
           <div className="flex items-center justify-between pb-2">
             <span className="text-xs font-semibold text-slate-500">All Tracked Issues</span>
-            <div className="h-7 w-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+            <div className="h-7 w-7 rounded-lg bg-red-50 text-red-600 flex items-center justify-center">
               <Eye className="h-3.5 w-3.5" />
             </div>
           </div>
@@ -201,7 +201,7 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search by ID, subject, dept..."
-            className="w-full h-9 pl-9 pr-3 text-xs bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:bg-white transition-all placeholder:text-slate-400"
+            className="w-full h-9 pl-9 pr-3 text-xs bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-red-500 focus:bg-white transition-all placeholder:text-slate-400"
           />
         </div>
       </div>
@@ -224,7 +224,7 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
             <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
               {filteredTickets.map((ticket) => (
                 <tr key={ticket.id} className="hover:bg-slate-50/80 transition-colors">
-                  <td className="py-3.5 px-4 font-mono text-[11px] text-blue-600 font-bold">
+                  <td className="py-3.5 px-4 font-mono text-[11px] text-red-600 font-bold">
                     #{ticket.id}
                   </td>
                   <td className="py-3.5 px-4">{getRoleBadge(ticket.category)}</td>
@@ -243,8 +243,8 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
                   </td>
                   <td className="py-3.5 px-4">
                     {ticket.attachmentsCount > 0 ? (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md">
-                        <Paperclip className="h-3 w-3 text-blue-500" />
+                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-red-700 bg-red-50 px-2 py-0.5 rounded-md">
+                        <Paperclip className="h-3 w-3 text-red-500" />
                         <span>{ticket.attachmentsCount} file{ticket.attachmentsCount > 1 ? 's' : ''}</span>
                       </span>
                     ) : (
@@ -257,7 +257,7 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
                       onChange={(e) =>
                         onStatusChange(ticket.id, e.target.value as SupportTicket['status'])
                       }
-                      className="text-xs font-semibold py-1 px-2 rounded-lg border border-slate-200 bg-white text-slate-700 outline-none focus:border-blue-500 cursor-pointer shadow-xs"
+                      className="text-xs font-semibold py-1 px-2 rounded-lg border border-slate-200 bg-white text-slate-700 outline-none focus:border-red-500 cursor-pointer shadow-xs"
                     >
                       <option value="In Progress">In Progress</option>
                       <option value="Investigating">Investigating</option>
@@ -269,7 +269,7 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
                     <button
                       type="button"
                       onClick={() => setSelectedTicket(ticket)}
-                      className="px-2.5 py-1 text-xs font-semibold text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+                      className="px-2.5 py-1 text-xs font-semibold text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
                     >
                       Inspect
                     </button>
@@ -287,7 +287,7 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
           <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-lg w-full p-6 space-y-4 animate-fadeIn">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center space-x-2">
-                <span className="font-mono text-sm font-bold text-blue-600">
+                <span className="font-mono text-sm font-bold text-red-600">
                   #{selectedTicket.id}
                 </span>
                 {getRoleBadge(selectedTicket.category)}
@@ -334,7 +334,7 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
                   Attached Files ({selectedTicket.attachmentsCount})
                 </span>
                 <div className="p-2.5 rounded-xl border border-slate-200/80 bg-white flex items-center gap-2 text-slate-600 mt-1">
-                  <Paperclip className="h-4 w-4 text-blue-600" />
+                  <Paperclip className="h-4 w-4 text-red-600" />
                   <span>
                     {selectedTicket.attachmentsCount > 0
                       ? `${selectedTicket.attachmentsCount} verified attachment files ready for download`

@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import type { SupportTicket, UserRole } from '../../types';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../ui/card';
-import { Select } from '../ui/select';
 import { Button } from '../ui/button';
 import { FileUpload, type UploadedFile } from '../ui/file-upload';
 import {
@@ -21,10 +20,10 @@ interface UserRoleViewProps {
   currentRole: Exclude<UserRole, 'Super Admin'>;
   tickets: SupportTicket[];
   onSubmitTicket: (newTicket: {
-    department: string;
     subject: string;
     description: string;
     files: UploadedFile[];
+    department?: string;
   }) => void;
   activeNav: string;
   onNavChange: (nav: string) => void;
@@ -37,7 +36,6 @@ export const UserRoleView: React.FC<UserRoleViewProps> = ({
   activeNav,
   onNavChange,
 }) => {
-  const [department, setDepartment] = useState('msis');
   const [subject, setSubject] = useState('');
   const [description, setDescription] = useState('');
   const [files, setFiles] = useState<UploadedFile[]>([]);
@@ -52,7 +50,7 @@ export const UserRoleView: React.FC<UserRoleViewProps> = ({
     if (!ticketSearch.trim()) return true;
     return (
       t.subject.toLowerCase().includes(ticketSearch.toLowerCase()) ||
-      t.department.toLowerCase().includes(ticketSearch.toLowerCase()) ||
+      (t.department && t.department.toLowerCase().includes(ticketSearch.toLowerCase())) ||
       t.id.toLowerCase().includes(ticketSearch.toLowerCase())
     );
   });
@@ -65,7 +63,6 @@ export const UserRoleView: React.FC<UserRoleViewProps> = ({
     setTimeout(() => {
       const generatedId = `TK-${Math.floor(10000 + Math.random() * 90000)}`;
       onSubmitTicket({
-        department,
         subject,
         description,
         files,
@@ -82,7 +79,7 @@ export const UserRoleView: React.FC<UserRoleViewProps> = ({
   const getRoleIcon = () => {
     switch (currentRole) {
       case 'Student':
-        return <GraduationCap className="h-4 w-4 text-blue-600" />;
+        return <GraduationCap className="h-4 w-4 text-red-600" />;
       case 'Faculty':
         return <Briefcase className="h-4 w-4 text-indigo-600" />;
       case 'Secretary':
@@ -103,7 +100,7 @@ export const UserRoleView: React.FC<UserRoleViewProps> = ({
           <div>
             <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
               {currentRole} Support Console
-              <span className="text-[10px] font-semibold bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full">
+              <span className="text-[10px] font-semibold bg-red-50 text-red-700 px-2 py-0.5 rounded-full">
                 Verified Role
               </span>
             </h2>
@@ -121,7 +118,7 @@ export const UserRoleView: React.FC<UserRoleViewProps> = ({
             leftIcon={<PlusCircle className="h-3.5 w-3.5" />}
             className="rounded-xl text-xs"
           >
-            Submit Bug
+            Submit Ticket
           </Button>
 
           <Button
@@ -149,7 +146,7 @@ export const UserRoleView: React.FC<UserRoleViewProps> = ({
                 <p className="text-xs text-slate-500">
                   Your ticket has been dispatched under {currentRole} submission:
                 </p>
-                <p className="text-2xl font-mono font-bold text-blue-600 pt-1">
+                <p className="text-2xl font-mono font-bold text-red-600 pt-1">
                   #{submittedId}
                 </p>
               </div>
@@ -182,30 +179,12 @@ export const UserRoleView: React.FC<UserRoleViewProps> = ({
                   Submit Bug or Technical Request
                 </CardTitle>
                 <CardDescription className="text-xs text-slate-500">
-                  Filing as <span className="font-semibold text-slate-800">{currentRole}</span> • Department, subject, details & file uploads
+                  Filing as <span className="font-semibold text-slate-800">{currentRole}</span> • Subject, replication details & file uploads
                 </CardDescription>
               </CardHeader>
 
               <form onSubmit={handleSubmit} className="bg-white">
                 <CardContent className="p-6 space-y-5 bg-white">
-                  {/* Department Only (No system category) */}
-                  <Select
-                    label="Department"
-                    required
-                    value={department}
-                    onChange={(e) => setDepartment(e.target.value)}
-                    selectSize="md"
-                    options={[
-                      { value: 'msis', label: 'MSIS Department' },
-                      { value: 'is', label: 'Information Systems' },
-                      { value: 'cs', label: 'Computer Science' },
-                      { value: 'it', label: 'Information Technology' },
-                      { value: 'academic', label: 'Academic Affairs' },
-                      { value: 'registrar', label: 'Registrar & Admissions' },
-                      { value: 'admin', label: 'Administration' },
-                    ]}
-                  />
-
                   {/* Subject */}
                   <div className="flex flex-col space-y-1.5">
                     <label className="text-xs font-semibold text-slate-700">
@@ -217,7 +196,7 @@ export const UserRoleView: React.FC<UserRoleViewProps> = ({
                       value={subject}
                       onChange={(e) => setSubject(e.target.value)}
                       placeholder="e.g. Portal login session timeout error on Chrome"
-                      className="h-11 px-3.5 text-xs bg-white text-slate-800 border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all placeholder:text-slate-400"
+                      className="h-11 px-3.5 text-xs bg-white text-slate-800 border border-slate-200 rounded-xl outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/10 transition-all placeholder:text-slate-400"
                     />
                   </div>
 
@@ -232,7 +211,7 @@ export const UserRoleView: React.FC<UserRoleViewProps> = ({
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
                       placeholder="Describe the bug, steps to reproduce, or technical details..."
-                      className="p-3.5 text-xs bg-white text-slate-800 border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all resize-none placeholder:text-slate-400"
+                      className="p-3.5 text-xs bg-white text-slate-800 border border-slate-200 rounded-xl outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/10 transition-all resize-none placeholder:text-slate-400"
                     />
                   </div>
 
@@ -289,7 +268,7 @@ export const UserRoleView: React.FC<UserRoleViewProps> = ({
                 value={ticketSearch}
                 onChange={(e) => setTicketSearch(e.target.value)}
                 placeholder="Search my tickets..."
-                className="w-full h-9 pl-9 pr-3 text-xs bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:bg-white transition-all placeholder:text-slate-400"
+                className="w-full h-9 pl-9 pr-3 text-xs bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-red-500 focus:bg-white transition-all placeholder:text-slate-400"
               />
             </div>
           </div>
@@ -326,7 +305,7 @@ export const UserRoleView: React.FC<UserRoleViewProps> = ({
                   <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
                     {filteredMyTickets.map((ticket) => (
                       <tr key={ticket.id} className="hover:bg-slate-50/80 transition-colors">
-                        <td className="py-3.5 px-4 font-mono text-[11px] text-blue-600 font-bold">
+                        <td className="py-3.5 px-4 font-mono text-[11px] text-red-600 font-bold">
                           #{ticket.id}
                         </td>
                         <td className="py-3.5 px-4 font-semibold text-slate-800">
@@ -344,8 +323,8 @@ export const UserRoleView: React.FC<UserRoleViewProps> = ({
                         </td>
                         <td className="py-3.5 px-4">
                           {ticket.attachmentsCount > 0 ? (
-                            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md">
-                              <Paperclip className="h-3 w-3 text-blue-500" />
+                            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-red-700 bg-red-50 px-2 py-0.5 rounded-md">
+                              <Paperclip className="h-3 w-3 text-red-500" />
                               <span>{ticket.attachmentsCount} file{ticket.attachmentsCount > 1 ? 's' : ''}</span>
                             </span>
                           ) : (
@@ -358,13 +337,13 @@ export const UserRoleView: React.FC<UserRoleViewProps> = ({
                               ticket.status === 'Resolved'
                                 ? 'text-emerald-600'
                                 : ticket.status === 'In Progress'
-                                ? 'text-blue-600'
+                                ? 'text-amber-600'
                                 : 'text-slate-600'
                             }`}
                           >
                             <span
                               className={`h-1.5 w-1.5 rounded-full ${
-                                ticket.status === 'Resolved' ? 'bg-emerald-500' : 'bg-blue-500 animate-pulse'
+                                ticket.status === 'Resolved' ? 'bg-emerald-500' : 'bg-amber-500 animate-pulse'
                               }`}
                             />
                             {ticket.status}
