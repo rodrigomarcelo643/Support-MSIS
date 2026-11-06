@@ -53,9 +53,11 @@ export const LoginPage: React.FC = () => {
             scope: 'email profile openid',
             callback: async (tokenResponse: any) => {
               if (tokenResponse.error) {
-                if (tokenResponse.error !== 'popup_closed_by_user') {
+                if (tokenResponse.error === 'popup_closed_by_user') {
+                  setErrorMessage('Google Sign-In Error: Sign-in popup was closed before completion.');
+                } else {
                   setErrorMessage(
-                    `Google sign-in error (${tokenResponse.error}). Make sure your domain is added to Authorized JavaScript origins in Google Cloud Console.`
+                    `Google Sign-In Error: ${tokenResponse.error_description || tokenResponse.error}. Please check Authorized JavaScript origins in Google Cloud Console.`
                   );
                 }
                 setSigningIn(false);
@@ -75,19 +77,19 @@ export const LoginPage: React.FC = () => {
                   });
 
                   if (!res.ok) {
-                    throw new Error('Failed to retrieve user profile from Google.');
+                    throw new Error('Google Sign-In Error: Failed to retrieve user profile from Google.');
                   }
 
                   const profile = await res.json();
                   if (!profile?.email) {
-                    throw new Error('Google did not provide an email address.');
+                    throw new Error('Google Sign-In Error: Google did not provide an email address.');
                   }
 
                   // Verify role in MSIS database (users, faculties, secretaries, students)
                   await signInWithGoogle(profile.email, profile.name, profile.picture);
                   navigate('/dashboard');
                 } catch (err: any) {
-                  const msg = err?.message || 'Access Denied: Account not registered in MSIS records.';
+                  const msg = err?.message || 'Error: Your email is not registered on the institution.';
                   setErrorMessage(msg);
                 } finally {
                   setSigningIn(false);
@@ -127,7 +129,7 @@ export const LoginPage: React.FC = () => {
                     navigate('/dashboard');
                   }
                 } catch (err: any) {
-                  setErrorMessage(err?.message || 'Access Denied: Account not registered in MSIS records.');
+                  setErrorMessage(err?.message || 'Error: Your email is not registered on the institution.');
                 } finally {
                   setSigningIn(false);
                 }
@@ -186,7 +188,10 @@ export const LoginPage: React.FC = () => {
           scope: 'email profile openid',
           callback: async (tokenResponse: any) => {
             if (tokenResponse.error) {
-              setErrorMessage(`Google authentication error: ${tokenResponse.error}`);
+              const friendly = tokenResponse.error === 'popup_closed_by_user'
+                ? 'Google Sign-In Error: Sign-in popup was closed before completion.'
+                : `Google Sign-In Error: ${tokenResponse.error_description || tokenResponse.error}`;
+              setErrorMessage(friendly);
               setSigningIn(false);
               return;
             }
@@ -199,9 +204,11 @@ export const LoginPage: React.FC = () => {
                 if (profile?.email) {
                   await signInWithGoogle(profile.email, profile.name, profile.picture);
                   navigate('/dashboard');
+                } else {
+                  throw new Error('Google Sign-In Error: No email address provided by Google.');
                 }
               } catch (err: any) {
-                setErrorMessage(err?.message || 'Access Denied: Account not registered in MSIS records.');
+                setErrorMessage(err?.message || 'Error: Your email is not registered on the institution.');
               } finally {
                 setSigningIn(false);
               }
@@ -213,14 +220,14 @@ export const LoginPage: React.FC = () => {
         return;
       } catch (err: any) {
         setSigningIn(false);
-        setErrorMessage(err?.message || 'Unable to start Google Sign-In.');
+        setErrorMessage(err?.message || 'Google Sign-In Error: Unable to launch sign-in window.');
         return;
       }
     }
 
     // Fallback: Google script is still loading or blocked by ad-blocker
     setErrorMessage(
-      'Google Identity Services is loading. Please check your internet connection or disable ad-blockers and try again.'
+      'Google Sign-In Error: Google services could not be loaded. Please check your internet connection or disable ad-blockers.'
     );
   };
 
