@@ -6,8 +6,21 @@ import { Settings as SettingsIcon, User as UserIcon, Bell, Check, LogOut } from 
 
 export const RoleSettingsPage: React.FC = () => {
   const { user, openLogoutModal } = useAuth();
+  const [avatarError, setAvatarError] = React.useState(false);
   const isLoading = usePageSkeleton(250);
   const currentRole = user?.role || 'Admin';
+
+  const userInitials = user?.name
+    ? user.name
+        .split(' ')
+        .filter(Boolean)
+        .map((n) => n[0])
+        .slice(0, 2)
+        .join('')
+        .toUpperCase()
+    : currentRole === 'Super Admin'
+    ? 'SA'
+    : currentRole.charAt(0) + 'U';
 
   if (isLoading) {
     return <SettingsSkeleton />;
@@ -35,8 +48,18 @@ export const RoleSettingsPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-          <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-2xl bg-red-600 text-white font-extrabold text-base sm:text-lg flex items-center justify-center shadow-xs shrink-0">
-            {currentRole === 'Super Admin' ? 'SA' : currentRole.charAt(0) + 'U'}
+          <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-2xl bg-red-600 text-white font-extrabold text-base sm:text-lg flex items-center justify-center shadow-xs shrink-0 overflow-hidden relative">
+            {user?.avatar_url && !avatarError ? (
+              <img
+                src={user.avatar_url}
+                alt={user?.name || currentRole}
+                referrerPolicy="no-referrer"
+                className="h-full w-full object-cover"
+                onError={() => setAvatarError(true)}
+              />
+            ) : (
+              <span>{userInitials}</span>
+            )}
           </div>
           <div className="min-w-0 flex-1">
             <h3 className="text-sm sm:text-base font-bold text-slate-900 truncate">
