@@ -81,8 +81,8 @@ export const DashboardLayout: React.FC = () => {
             </h1>
           </div>
 
-          <div className="flex items-center shrink-0">
-            {/* Notification Bell (Only element remaining on header right) */}
+          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+            {/* Notification Bell */}
             <button
               type="button"
               onClick={() => navigate(`/${roleSlug}/activity`)}
@@ -92,6 +92,37 @@ export const DashboardLayout: React.FC = () => {
               <Bell className="h-4 w-4" />
               {userActivityLogsCount > 0 && (
                 <span className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 h-2 w-2 rounded-full bg-red-600 ring-2 ring-white" />
+              )}
+            </button>
+
+            {/* Profile Avatar Quick Button */}
+            <button
+              type="button"
+              onClick={() => navigate(`/${roleSlug}/settings`)}
+              className="h-8 w-8 sm:h-9 sm:w-9 rounded-full bg-red-600 text-white font-bold text-xs flex items-center justify-center shadow-xs overflow-hidden hover:ring-2 hover:ring-red-500/20 transition-all cursor-pointer border border-slate-200/80"
+              title={`${user?.name || currentRole} - Profile Settings`}
+            >
+              {user?.avatar_url ? (
+                <img
+                  src={user.avatar_url}
+                  alt={user?.name || currentRole}
+                  referrerPolicy="no-referrer"
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <span>
+                  {user?.name
+                    ? user.name
+                        .split(' ')
+                        .filter(Boolean)
+                        .map((n: string) => n[0])
+                        .slice(0, 2)
+                        .join('')
+                        .toUpperCase()
+                    : currentRole === 'Super Admin'
+                    ? 'SA'
+                    : currentRole.charAt(0) + 'U'}
+                </span>
               )}
             </button>
           </div>
