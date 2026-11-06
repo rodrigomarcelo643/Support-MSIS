@@ -51,6 +51,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
   const isLoading = usePageSkeleton(280);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isHoverOverlayVisible, setIsHoverOverlayVisible] = useState(false);
+  const [avatarError, setAvatarError] = useState(false);
   const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { user, openLogoutModal } = useAuth();
@@ -353,8 +354,18 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
           >
             <div className="flex items-center space-x-2.5 overflow-hidden min-w-0">
               <div className="relative shrink-0">
-                <div className="h-8 w-8 rounded-full bg-red-600 text-white font-bold text-xs flex items-center justify-center shadow-xs">
-                  {userInitials}
+                <div className="h-8 w-8 rounded-full bg-red-600 text-white font-bold text-xs flex items-center justify-center shadow-xs overflow-hidden">
+                  {user?.avatar_url && !avatarError ? (
+                    <img
+                      src={user.avatar_url}
+                      alt={userFullName}
+                      referrerPolicy="no-referrer"
+                      className="h-full w-full object-cover"
+                      onError={() => setAvatarError(true)}
+                    />
+                  ) : (
+                    <span>{userInitials}</span>
+                  )}
                 </div>
                 <span className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 bg-emerald-500 text-white text-[8px] font-bold rounded-full flex items-center justify-center border border-white">
                   ✓
@@ -527,8 +538,18 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
             className="relative cursor-pointer group hover:scale-105 active:scale-95 transition-transform"
             title={`${isSuperAdmin ? 'Super Admin' : currentRole} - Click for Settings / Logout`}
           >
-            <div className="h-9 w-9 rounded-full bg-red-600 text-white font-bold text-xs flex items-center justify-center shadow-xs">
-              {userInitials}
+            <div className="h-9 w-9 rounded-full bg-red-600 text-white font-bold text-xs flex items-center justify-center shadow-xs overflow-hidden">
+              {user?.avatar_url && !avatarError ? (
+                <img
+                  src={user.avatar_url}
+                  alt={userFullName}
+                  referrerPolicy="no-referrer"
+                  className="h-full w-full object-cover"
+                  onError={() => setAvatarError(true)}
+                />
+              ) : (
+                <span>{userInitials}</span>
+              )}
             </div>
             <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 bg-emerald-500 text-white text-[7px] font-bold rounded-full flex items-center justify-center border-2 border-white">
               ✓
