@@ -43,7 +43,7 @@ export const AuthCallbackPage: React.FC = () => {
         // If no token in URL, redirect back to login
         navigate('/login', { replace: true });
       } catch (err: any) {
-        setError(err?.message || 'Access Denied: Account not registered in MSIS records.');
+        setError(err?.message || 'Error: Your email is not registered in the institution.');
       }
     };
 
