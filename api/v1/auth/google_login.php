@@ -171,6 +171,6 @@ if ($stmt) {
 http_response_code(403);
 echo json_encode([
     'status' => 'error',
-    'message' => 'Access Denied: The Google account (' . $email . ') is not registered in MSIS records. Please sign in with an authorized Student, Faculty, Staff, or Admin account.'
+    'message' => 'Error: Your email (' . htmlspecialchars($email) . ') is not registered in the institution.'
 ]);
 exit;
