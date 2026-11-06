@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import southweLogo from '../assets/logo/southwe_main.png';
@@ -12,6 +13,8 @@ import {
   AlertCircle,
   Lock,
   ShieldCheck,
+  ShieldAlert,
+  X,
   ArrowLeft,
   Users,
   GraduationCap,
@@ -22,12 +25,50 @@ export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const { signInWithGoogle, isLoading, previousAccount, clearPreviousAccount } = useAuth();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [unregisteredAccount, setUnregisteredAccount] = useState<{
+    email: string;
+    name?: string;
+    avatar_url?: string;
+  } | null>(null);
   const [signingIn, setSigningIn] = useState(false);
   const [avatarError, setAvatarError] = useState(false);
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
   const [googleClientId, setGoogleClientId] = useState<string>(GOOGLE_CLIENT_ID);
   const tokenClientRef = useRef<any>(null);
   const focusTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Close unregistered error modal on Escape key press
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && unregisteredAccount) {
+        setUnregisteredAccount(null);
+      }
+    };
+    if (unregisteredAccount) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [unregisteredAccount]);
+
+  const handleAuthError = (err: any, account: { email: string; name?: string; avatar_url?: string }) => {
+    const msg = err?.message || 'Error: Your email is not registered in the institution.';
+    const isNotRegistered =
+      msg.toLowerCase().includes('not registered') ||
+      msg.toLowerCase().includes('not found') ||
+      msg.toLowerCase().includes('institution') ||
+      msg.toLowerCase().includes('access denied');
+
+    if (isNotRegistered) {
+      setErrorMessage(null);
+      setUnregisteredAccount({
+        email: account.email,
+        name: account.name,
+        avatar_url: account.avatar_url,
+      });
+    } else {
+      setErrorMessage(msg);
+    }
+  };
 
   // Monitor window focus to automatically stop loading if the Google popup is closed
   const startPopupMonitoring = () => {
@@ -107,6 +148,7 @@ export const LoginPage: React.FC = () => {
               }
 
               if (tokenResponse.access_token) {
+                let profile: any = null;
                 try {
                   setSigningIn(true);
                   setErrorMessage(null);
@@ -122,7 +164,7 @@ export const LoginPage: React.FC = () => {
                     throw new Error('Google Sign-In Error: Failed to retrieve user profile from Google.');
                   }
 
-                  const profile = await res.json();
+                  profile = await res.json();
                   if (!profile?.email) {
                     throw new Error('Google Sign-In Error: Google did not provide an email address.');
                   }
@@ -131,8 +173,11 @@ export const LoginPage: React.FC = () => {
                   await signInWithGoogle(profile.email, profile.name, profile.picture);
                   navigate('/dashboard');
                 } catch (err: any) {
-                  const msg = err?.message || 'Error: Your email is not registered on the institution.';
-                  setErrorMessage(msg);
+                  handleAuthError(err, {
+                    email: profile?.email || '',
+                    name: profile?.name,
+                    avatar_url: profile?.picture,
+                  });
                 } finally {
                   setSigningIn(false);
                 }
@@ -151,6 +196,7 @@ export const LoginPage: React.FC = () => {
             client_id: activeClientId,
             callback: async (response: any) => {
               if (response.credential) {
+                let payload: any = null;
                 try {
                   setSigningIn(true);
                   setErrorMessage(null);
@@ -164,14 +210,18 @@ export const LoginPage: React.FC = () => {
                       .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
                       .join('')
                   );
-                  const payload = JSON.parse(jsonPayload);
+                  payload = JSON.parse(jsonPayload);
 
                   if (payload?.email) {
                     await signInWithGoogle(payload.email, payload.name, payload.picture);
                     navigate('/dashboard');
                   }
                 } catch (err: any) {
-                  setErrorMessage(err?.message || 'Error: Your email is not registered on the institution.');
+                  handleAuthError(err, {
+                    email: payload?.email || '',
+                    name: payload?.name,
+                    avatar_url: payload?.picture,
+                  });
                 } finally {
                   setSigningIn(false);
                 }
@@ -255,11 +305,12 @@ export const LoginPage: React.FC = () => {
             }
 
             if (tokenResponse.access_token) {
+              let profile: any = null;
               try {
                 const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
                   headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
                 });
-                const profile = await res.json();
+                profile = await res.json();
                 if (profile?.email) {
                   await signInWithGoogle(profile.email, profile.name, profile.picture);
                   navigate('/dashboard');
@@ -267,7 +318,11 @@ export const LoginPage: React.FC = () => {
                   throw new Error('Google Sign-In Error: No email address provided by Google.');
                 }
               } catch (err: any) {
-                setErrorMessage(err?.message || 'Error: Your email is not registered on the institution.');
+                handleAuthError(err, {
+                  email: profile?.email || '',
+                  name: profile?.name,
+                  avatar_url: profile?.picture,
+                });
               } finally {
                 setSigningIn(false);
               }
@@ -708,6 +763,139 @@ export const LoginPage: React.FC = () => {
       <footer className="py-2 text-center text-[11px] text-slate-400 shrink-0">
         <p>© 2026 MSIS | School of Medicine Support</p>
       </footer>
+
+      {/* Account Not Registered Modal */}
+      {unregisteredAccount &&
+        createPortal(
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3.5 sm:p-4 animate-fadeIn">
+            {/* Dark Backdrop */}
+            <div
+              className="fixed inset-0 bg-slate-950/50 backdrop-blur-[2px] transition-opacity cursor-pointer"
+              onClick={() => setUnregisteredAccount(null)}
+            />
+
+            {/* Modal Card */}
+            <div
+              role="dialog"
+              aria-modal="true"
+              className="relative w-full max-w-md bg-white rounded-2xl sm:rounded-3xl border border-slate-200/90 shadow-[0_25px_60px_rgba(0,0,0,0.22)] p-5 sm:p-7 text-center space-y-4 sm:space-y-5 animate-scaleUp z-10 overflow-hidden"
+            >
+              {/* Close Button */}
+              <button
+                type="button"
+                onClick={() => setUnregisteredAccount(null)}
+                className="absolute top-4 right-4 h-8 w-8 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 flex items-center justify-center transition-colors cursor-pointer"
+                title="Close"
+              >
+                <X className="h-4 w-4" />
+              </button>
+
+              {/* Warning Shield Icon */}
+              <div className="h-14 w-14 sm:h-16 sm:w-16 rounded-2xl bg-red-50 border border-red-100 flex items-center justify-center mx-auto text-red-600 shadow-xs">
+                <ShieldAlert className="h-7 w-7 sm:h-8 sm:w-8 text-red-600" />
+              </div>
+
+              {/* Header Texts */}
+              <div className="space-y-1.5">
+                <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">
+                  Account Not Registered
+                </h2>
+                <p className="text-xs text-slate-500 leading-relaxed max-w-sm mx-auto">
+                  This Google account is authenticated, but was not found in the Southwestern University MSIS authorized system directory.
+                </p>
+              </div>
+
+              {/* Account Pill Chip */}
+              <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center gap-3 text-left">
+                <div className="h-10 w-10 rounded-full bg-red-100 text-red-700 font-bold text-xs flex items-center justify-center overflow-hidden shrink-0 border border-slate-200">
+                  {unregisteredAccount.avatar_url ? (
+                    <img
+                      src={unregisteredAccount.avatar_url}
+                      alt={unregisteredAccount.name || 'Account'}
+                      referrerPolicy="no-referrer"
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <span>
+                      {unregisteredAccount.name
+                        ? unregisteredAccount.name
+                            .split(' ')
+                            .filter(Boolean)
+                            .map((n) => n[0])
+                            .slice(0, 2)
+                            .join('')
+                            .toUpperCase()
+                        : 'G'}
+                    </span>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="text-xs sm:text-sm font-bold text-slate-900 truncate">
+                      {unregisteredAccount.name || 'Google User'}
+                    </span>
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 whitespace-nowrap">
+                      Unregistered
+                    </span>
+                  </div>
+                  <span className="text-[11px] text-slate-500 truncate block mt-0.5 font-medium">
+                    {unregisteredAccount.email}
+                  </span>
+                </div>
+              </div>
+
+              {/* Permission & Directory Scope Notice */}
+              <div className="p-2.5 rounded-xl bg-amber-50/70 border border-amber-200/70 text-left text-[11px] text-amber-800 leading-relaxed flex items-start gap-2">
+                <AlertCircle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                <span>
+                  Portal access is restricted to enrolled <strong>Students</strong>, <strong>Faculty</strong>, <strong>Secretaries</strong>, and authorized <strong>Administrators</strong>.
+                </span>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="space-y-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUnregisteredAccount(null);
+                    handleContinueWithGoogle(undefined, true);
+                  }}
+                  className="w-full h-11 px-4 rounded-xl bg-red-600 hover:bg-red-700 active:bg-red-800 text-white font-bold text-xs sm:text-sm shadow-xs flex items-center justify-center gap-2.5 transition-all cursor-pointer whitespace-nowrap"
+                >
+                  {/* Google G SVG */}
+                  <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24">
+                    <path
+                      fill="#4285F4"
+                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                    />
+                    <path
+                      fill="#34A853"
+                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                    />
+                    <path
+                      fill="#FBBC05"
+                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+                    />
+                    <path
+                      fill="#EA4335"
+                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+                    />
+                  </svg>
+                  <span>Try Another Google Account</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setUnregisteredAccount(null)}
+                  className="w-full text-center text-xs font-semibold text-slate-500 hover:text-slate-800 transition-colors py-1.5 cursor-pointer"
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 };
