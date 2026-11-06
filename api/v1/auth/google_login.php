@@ -52,7 +52,7 @@ if ($stmt) {
     $stmt->execute();
     $result = $stmt->get_result();
     if ($row = $result->fetch_assoc()) {
-        $role = 'Admin';
+        $role = !empty($row['role']) ? $row['role'] : 'Admin';
         $name = $row['name'] ?? trim(($row['first_name'] ?? '') . ' ' . ($row['last_name'] ?? '')) ?: $googleName ?: 'Administrator';
         
         $user = [
