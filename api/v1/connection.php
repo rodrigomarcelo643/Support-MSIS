@@ -4,6 +4,17 @@
  * Configured for Hostinger deployment (Base URL: https://support.swu-som.com/)
  */
 
+// Restrict direct browser/public access - only permit inclusion by other API scripts
+if (isset($_SERVER['SCRIPT_FILENAME']) && realpath(__FILE__) === realpath($_SERVER['SCRIPT_FILENAME'])) {
+    http_response_code(403);
+    header("Content-Type: application/json; charset=UTF-8");
+    echo json_encode([
+        "status" => "error",
+        "message" => "Direct access prohibited"
+    ]);
+    exit;
+}
+
 // Error handling settings for production API
 ini_set("display_errors", 0);
 error_reporting(E_ALL);
@@ -11,6 +22,66 @@ error_reporting(E_ALL);
 // Base application URL
 if (!defined('BASE_URL')) {
     define('BASE_URL', 'https://support.swu-som.com/');
+}
+
+// -------------------------------------------------------------
+// Load Hostinger Environment Variables (.env)
+// -------------------------------------------------------------
+$envPaths = [
+    dirname(__DIR__, 2) . '/.env', // public_html/.env
+    dirname(__DIR__) . '/.env',    // api/.env
+    __DIR__ . '/.env'              // api/v1/.env
+];
+
+$envConfig = [];
+foreach ($envPaths as $envPath) {
+    if (file_exists($envPath) && is_readable($envPath)) {
+        $lines = file($envPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        foreach ($lines as $line) {
+            $line = trim($line);
+            if (empty($line) || strpos($line, '#') === 0) continue;
+            if (strpos($line, '=') !== false) {
+                list($key, $val) = explode('=', $line, 2);
+                $key = trim($key);
+                $val = trim($val);
+                $val = trim($val, "\"'");
+                // Remove inline comments
+                if (strpos($val, '#') !== false && strpos($line, '"') === false && strpos($line, "'") === false) {
+                    $val = trim(explode('#', $val)[0]);
+                }
+                $envConfig[$key] = $val;
+                if (!isset($_ENV[$key])) $_ENV[$key] = $val;
+                if (!isset($_SERVER[$key])) $_SERVER[$key] = $val;
+            }
+        }
+        break;
+    }
+}
+
+// Google Integration Credentials (Loaded from Hostinger .env or server environment)
+$googleClientId = $envConfig['GOOGLE_CLIENT_ID'] 
+    ?? $envConfig['VITE_GOOGLE_CLIENT_ID'] 
+    ?? getenv('GOOGLE_CLIENT_ID') 
+    ?? getenv('VITE_GOOGLE_CLIENT_ID') 
+    ?? '';
+
+$googleClientSecret = $envConfig['GOOGLE_CLIENT_SECRET'] 
+    ?? getenv('GOOGLE_CLIENT_SECRET') 
+    ?? '';
+
+$googleRedirectUri = $envConfig['GOOGLE_REDIRECT_URI'] 
+    ?? $envConfig['VITE_GOOGLE_REDIRECT_URI'] 
+    ?? getenv('GOOGLE_REDIRECT_URI') 
+    ?? 'https://support.swu-som.com/auth/google/callback';
+
+if (!defined('GOOGLE_CLIENT_ID')) {
+    define('GOOGLE_CLIENT_ID', $googleClientId);
+}
+if (!defined('GOOGLE_CLIENT_SECRET')) {
+    define('GOOGLE_CLIENT_SECRET', $googleClientSecret);
+}
+if (!defined('GOOGLE_REDIRECT_URI')) {
+    define('GOOGLE_REDIRECT_URI', $googleRedirectUri);
 }
 
 // Cross-Origin Resource Sharing (CORS) Headers
@@ -40,11 +111,11 @@ if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'OPTIONS
     exit;
 }
 
-// Database Credentials (Hostinger MySQL)
-$host = "127.0.0.1"; // 127.0.0.1 avoids Unix socket errors on Hostinger
-$dbname = "u886220933_msis";
-$username = "u886220933_msis";
-$password = "Msis12345";
+// Database Credentials (Hostinger MySQL - loaded from .env if present)
+$host = $envConfig['DB_HOST'] ?? "127.0.0.1"; // 127.0.0.1 avoids Unix socket errors on Hostinger
+$dbname = $envConfig['DB_DATABASE'] ?? $envConfig['DB_NAME'] ?? "u886220933_msis";
+$username = $envConfig['DB_USERNAME'] ?? $envConfig['DB_USER'] ?? "u886220933_msis";
+$password = $envConfig['DB_PASSWORD'] ?? $envConfig['DB_PASS'] ?? "Msis12345";
 
 // Establish mysqli connection
 $conn = new mysqli($host, $username, $password, $dbname);
