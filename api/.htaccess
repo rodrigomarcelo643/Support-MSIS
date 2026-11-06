@@ -1,0 +1,10 @@
+# Deny direct public access to connection.php
+<Files "connection.php">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Order Allow,Deny
+    Deny from all
+  </IfModule>
+</Files>
