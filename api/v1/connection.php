@@ -25,13 +25,18 @@ if (!defined('BASE_URL')) {
 }
 
 // -------------------------------------------------------------
-// Load Hostinger Environment Variables (.env)
+// Load Root Environment Variables (.env)
+// Targeted to fetch from the root public_html directory
 // -------------------------------------------------------------
-$envPaths = [
-    dirname(__DIR__, 2) . '/.env', // public_html/.env
-    dirname(__DIR__) . '/.env',    // api/.env
-    __DIR__ . '/.env'              // api/v1/.env
-];
+$docRoot = !empty($_SERVER['DOCUMENT_ROOT']) ? rtrim($_SERVER['DOCUMENT_ROOT'], '/\\') : null;
+$envPaths = array_values(array_unique(array_filter([
+    $docRoot ? $docRoot . '/.env' : null,              // public_html/.env (Hostinger webroot)
+    $docRoot ? dirname($docRoot) . '/.env' : null,     // domain root/.env (one level above public_html)
+    dirname(__DIR__, 2) . '/.env',                     // public_html/.env (relative to api/v1/)
+    dirname(__DIR__, 3) . '/.env',                     // Domain root (if api is 2 levels deep)
+    dirname(__DIR__) . '/.env',                        // api/.env
+    __DIR__ . '/.env'                                  // api/v1/.env
+])));
 
 $envConfig = [];
 foreach ($envPaths as $envPath) {
@@ -58,20 +63,22 @@ foreach ($envPaths as $envPath) {
     }
 }
 
-// Google Integration Credentials (Loaded from Hostinger .env or server environment)
-$googleClientId = $envConfig['GOOGLE_CLIENT_ID'] 
-    ?? $envConfig['VITE_GOOGLE_CLIENT_ID'] 
-    ?? getenv('GOOGLE_CLIENT_ID') 
-    ?? getenv('VITE_GOOGLE_CLIENT_ID') 
+// Google Integration Credentials (Loaded from root .env or server environment)
+$googleClientId = $envConfig['VITE_GOOGLE_CLIENT_ID']
+    ?? $envConfig['GOOGLE_CLIENT_ID']
+    ?? getenv('VITE_GOOGLE_CLIENT_ID')
+    ?? getenv('GOOGLE_CLIENT_ID')
     ?? '';
 
 $googleClientSecret = $envConfig['GOOGLE_CLIENT_SECRET'] 
+    ?? $envConfig['VITE_GOOGLE_CLIENT_SECRET']
     ?? getenv('GOOGLE_CLIENT_SECRET') 
     ?? '';
 
-$googleRedirectUri = $envConfig['GOOGLE_REDIRECT_URI'] 
-    ?? $envConfig['VITE_GOOGLE_REDIRECT_URI'] 
-    ?? getenv('GOOGLE_REDIRECT_URI') 
+$googleRedirectUri = $envConfig['VITE_GOOGLE_REDIRECT_URI']
+    ?? $envConfig['GOOGLE_REDIRECT_URI']
+    ?? getenv('VITE_GOOGLE_REDIRECT_URI')
+    ?? getenv('GOOGLE_REDIRECT_URI')
     ?? 'https://support.swu-som.com/auth/google/callback';
 
 if (!defined('GOOGLE_CLIENT_ID')) {
@@ -111,11 +118,43 @@ if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'OPTIONS
     exit;
 }
 
-// Database Credentials (Hostinger MySQL - loaded from .env if present)
-$host = $envConfig['DB_HOST'] ?? "127.0.0.1"; // 127.0.0.1 avoids Unix socket errors on Hostinger
-$dbname = $envConfig['DB_DATABASE'] ?? $envConfig['DB_NAME'] ?? "u886220933_msis";
-$username = $envConfig['DB_USERNAME'] ?? $envConfig['DB_USER'] ?? "u886220933_msis";
-$password = $envConfig['DB_PASSWORD'] ?? $envConfig['DB_PASS'] ?? "Msis12345";
+// Database Credentials (Fetched dynamically from root public_html .env using VITE_DB_*)
+$host = $envConfig['VITE_DB_HOST']
+    ?? $envConfig['DB_HOST']
+    ?? getenv('VITE_DB_HOST')
+    ?? getenv('DB_HOST')
+    ?? '127.0.0.1'; // 127.0.0.1 avoids Unix socket resolution issues
+
+$dbname = $envConfig['VITE_DB_DATABASE']
+    ?? $envConfig['DB_DATABASE']
+    ?? $envConfig['DB_NAME']
+    ?? getenv('VITE_DB_DATABASE')
+    ?? getenv('DB_DATABASE')
+    ?? '';
+
+$username = $envConfig['VITE_DB_USERNAME']
+    ?? $envConfig['DB_USERNAME']
+    ?? $envConfig['DB_USER']
+    ?? getenv('VITE_DB_USERNAME')
+    ?? getenv('DB_USERNAME')
+    ?? '';
+
+$password = $envConfig['VITE_DB_PASSWORD']
+    ?? $envConfig['DB_PASSWORD']
+    ?? $envConfig['DB_PASS']
+    ?? getenv('VITE_DB_PASSWORD')
+    ?? getenv('DB_PASSWORD')
+    ?? '';
+
+// Validate that database credentials exist in .env
+if (empty($dbname) || empty($username)) {
+    http_response_code(500);
+    echo json_encode([
+        "status" => "error",
+        "message" => "Database configuration error: VITE_DB_DATABASE and VITE_DB_USERNAME are required in the root public_html .env file."
+    ]);
+    exit;
+}
 
 // Establish mysqli connection with safe exception handling
 try {
