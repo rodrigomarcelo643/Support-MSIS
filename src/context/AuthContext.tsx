@@ -15,7 +15,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   backendUrl: string;
-  signInWithGoogle: () => Promise<void>;
+  signInWithGoogle: (email: string, name?: string, avatar?: string) => Promise<AuthUser>;
   signOut: () => Promise<void>;
 }
 
@@ -48,21 +48,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(false);
   }, []);
 
-  const signInWithGoogle = async () => {
+  const signInWithGoogle = async (googleEmail: string, googleName?: string, googleAvatar?: string): Promise<AuthUser> => {
     setIsLoading(true);
     try {
-      // Simulate fast institutional verification (ready for backend auth)
-      await new Promise((resolve) => setTimeout(resolve, 350));
-      const googleUser: AuthUser = {
-        id: 'usr_msis_google_01',
-        email: 'alex.morgan@msis.edu',
-        name: 'Alex Morgan',
-        avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-        role: 'Faculty',
-        department: 'MSIS Department',
+      const emailToVerify = (googleEmail || '').trim();
+      if (!emailToVerify) {
+        throw new Error('Google account email is missing.');
+      }
+
+      const response = await fetch(`${BACKEND_URL}/api/v1/auth/google_login.php`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify({
+          email: emailToVerify,
+          name: googleName || emailToVerify.split('@')[0],
+          avatar_url: googleAvatar || '',
+        }),
+      });
+
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok || !data || data.status !== 'success') {
+        const errorMsg = data?.message || `Access Denied: The account (${emailToVerify}) is not registered in MSIS records.`;
+        throw new Error(errorMsg);
+      }
+
+      const authenticatedUser: AuthUser = {
+        id: data.user.id,
+        email: data.user.email,
+        name: data.user.name,
+        role: data.user.role,
+        department: data.user.department,
+        avatar_url: data.user.avatar_url,
       };
-      setUser(googleUser);
-      localStorage.setItem('msis_auth_user', JSON.stringify(googleUser));
+
+      setUser(authenticatedUser);
+      localStorage.setItem('msis_auth_user', JSON.stringify(authenticatedUser));
+      return authenticatedUser;
     } finally {
       setIsLoading(false);
     }
@@ -70,9 +95,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signOut = async () => {
     try {
-      // Optional call to backend logout endpoint if available
       if (BACKEND_URL) {
-        fetch(`${BACKEND_URL}/api/auth/logout`, { method: 'POST' }).catch(() => {});
+        fetch(`${BACKEND_URL}/api/v1/auth/logout.php`, { method: 'POST' }).catch(() => {});
       }
     } catch {
       // ignore
