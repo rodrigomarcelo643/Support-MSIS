@@ -17,6 +17,9 @@ interface AuthContextType {
   backendUrl: string;
   signInWithGoogle: (email: string, name?: string, avatar?: string) => Promise<AuthUser>;
   signOut: () => Promise<void>;
+  isLogoutModalOpen: boolean;
+  openLogoutModal: () => void;
+  closeLogoutModal: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -34,6 +37,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return null;
   });
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState<boolean>(false);
+
+  const openLogoutModal = () => setIsLogoutModalOpen(true);
+  const closeLogoutModal = () => setIsLogoutModalOpen(false);
 
   useEffect(() => {
     // Check initial authenticated session
@@ -114,6 +121,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         backendUrl: BACKEND_URL,
         signInWithGoogle,
         signOut,
+        isLogoutModalOpen,
+        openLogoutModal,
+        closeLogoutModal,
       }}
     >
       {children}
