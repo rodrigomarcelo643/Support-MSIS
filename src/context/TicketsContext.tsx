@@ -137,6 +137,13 @@ export const TicketsProvider: React.FC<{ children: React.ReactNode }> = ({ child
       description: input.description,
       status: 'In Progress',
       attachmentsCount: input.files.length,
+      attachments: input.files.map((f, i) => ({
+        id: i + 1,
+        name: f.name,
+        url: f.previewUrl || (f.file instanceof File ? URL.createObjectURL(f.file) : ''),
+        size: f.size,
+        isImage: f.type.startsWith('image/'),
+      })),
       submittedAt: 'Just now',
       reporterName: user?.name || `MSIS ${resolvedCategory}`,
       reporterEmail: user?.email || `${resolvedCategory.toLowerCase()}@msis.edu`,
