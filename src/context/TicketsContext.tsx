@@ -2,6 +2,12 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { SupportTicket, UserRole } from '../types';
 import type { UploadedFile } from '../components/ui/file-upload';
 import { useAuth } from './AuthContext';
+import {
+  createTicketOnBackend,
+  fetchTicketsFromBackend,
+  updateTicketStatusOnBackend,
+  deleteTicketOnBackend,
+} from '../services/ticketsApi';
 
 interface SubmitTicketInput {
   subject: string;
@@ -14,8 +20,9 @@ interface SubmitTicketInput {
 interface TicketsContextType {
   tickets: SupportTicket[];
   isLoading: boolean;
-  submitTicket: (input: SubmitTicketInput) => SupportTicket;
-  updateTicketStatus: (id: string, status: SupportTicket['status']) => void;
+  submitTicket: (input: SubmitTicketInput) => Promise<SupportTicket>;
+  updateTicketStatus: (id: string, status: SupportTicket['status'], supportMessage?: string) => void;
+  deleteTicket: (id: string) => void;
   ticketCounts: {
     total: number;
     student: number;
@@ -27,58 +34,10 @@ interface TicketsContextType {
   refreshTickets: () => void;
 }
 
-const INITIAL_TICKETS: SupportTicket[] = [
-  {
-    id: 'TK-83009',
-    category: 'Faculty',
-    department: 'MSIS Department',
-    subject: 'Grade submission portal generates 500 error on CSV export',
-    description: 'When exporting the final semester grades CSV for Section 2, the portal crashes with a 500 internal server error.',
-    status: 'In Progress',
-    attachmentsCount: 2,
-    submittedAt: '15 mins ago',
-    reporterName: 'Dr. Marcus Vance',
-    reporterEmail: 'm.vance@msis.edu',
-  },
-  {
-    id: 'TK-83001',
-    category: 'Student',
-    department: 'Information Systems',
-    subject: 'Session timeout occurs prematurely during online quiz submission',
-    description: 'Logged out after 5 minutes of inactivity despite active timer on the module quiz page.',
-    status: 'Investigating',
-    attachmentsCount: 1,
-    submittedAt: '45 mins ago',
-    reporterName: 'David Kim',
-    reporterEmail: 'd.kim@student.msis.edu',
-  },
-  {
-    id: 'TK-83004',
-    category: 'Secretary',
-    department: 'Academic Affairs',
-    subject: 'Course syllabus document attachment fails to upload',
-    description: 'PDF syllabus files over 2MB fail to upload with "Network request failed" error notification.',
-    status: 'Resolved',
-    attachmentsCount: 1,
-    submittedAt: '2 hours ago',
-    reporterName: 'Sarah Jenkins',
-    reporterEmail: 's.jenkins@msis.edu',
-  },
-  {
-    id: 'TK-83002',
-    category: 'Admin',
-    department: 'Computer Science',
-    subject: 'Role permission cache not invalidating after faculty promotion',
-    description: 'Promoted faculty members still see student-level permissions until manual server cache purge.',
-    status: 'Dispatched',
-    attachmentsCount: 3,
-    submittedAt: '3 hours ago',
-    reporterName: 'Robert Lang',
-    reporterEmail: 'r.lang@admin.msis.edu',
-  },
-];
-
 const STORAGE_KEY = 'msis_support_tickets_v1';
+
+// Legacy dummy ticket codes to strip from cache so only real dynamic database records appear
+const LEGACY_DUMMY_IDS = new Set(['TK-83009', 'TK-83001', 'TK-83004', 'TK-83002']);
 
 const TicketsContext = createContext<TicketsContextType | undefined>(undefined);
 
@@ -86,31 +45,59 @@ export const TicketsProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
+  // Dynamic ticket state (Starts empty, populated dynamically from MySQL database)
   const [tickets, setTickets] = useState<SupportTicket[]>(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
-        return JSON.parse(stored);
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          return parsed.filter((t: SupportTicket) => !LEGACY_DUMMY_IDS.has(t.id));
+        }
       }
     } catch {
       // Fallback
     }
-    return INITIAL_TICKETS;
+    return [];
   });
 
+  // Hydrate tickets dynamically from backend MySQL database on load
   useEffect(() => {
-    // Initial hydration loading simulation
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 400);
-    return () => clearTimeout(timer);
+    let isMounted = true;
+    async function loadTickets() {
+      try {
+        const remoteTickets = await fetchTicketsFromBackend();
+        if (isMounted) {
+          if (Array.isArray(remoteTickets)) {
+            setTickets(remoteTickets);
+          }
+        }
+      } catch (err) {
+        console.warn('Backend tickets API offline or using offline cache:', err);
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    }
+    loadTickets();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const refreshTickets = () => {
     setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 350);
+    fetchTicketsFromBackend()
+      .then((remote) => {
+        if (remote && remote.length > 0) {
+          setTickets(remote);
+        }
+      })
+      .catch((err) => {
+        console.warn('Refresh tickets fallback:', err);
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
   };
 
   useEffect(() => {
@@ -121,7 +108,7 @@ export const TicketsProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   }, [tickets]);
 
-  const submitTicket = (input: SubmitTicketInput): SupportTicket => {
+  const submitTicket = async (input: SubmitTicketInput): Promise<SupportTicket> => {
     const departmentLabels: Record<string, string> = {
       msis: 'MSIS Department',
       is: 'Information Systems',
@@ -138,10 +125,14 @@ export const TicketsProvider: React.FC<{ children: React.ReactNode }> = ({ child
         ? (user.role as 'Student' | 'Faculty' | 'Secretary' | 'Admin')
         : 'Admin');
 
-    const newTicket: SupportTicket = {
+    const resolvedDepartment = input.department
+      ? (departmentLabels[input.department] || input.department)
+      : `${resolvedCategory} Unit`;
+
+    const optimisticTicket: SupportTicket = {
       id: `TK-${Math.floor(10000 + Math.random() * 90000)}`,
       category: resolvedCategory,
-      department: input.department ? (departmentLabels[input.department] || input.department) : `${resolvedCategory} Unit`,
+      department: resolvedDepartment,
       subject: input.subject,
       description: input.description,
       status: 'In Progress',
@@ -151,14 +142,61 @@ export const TicketsProvider: React.FC<{ children: React.ReactNode }> = ({ child
       reporterEmail: user?.email || `${resolvedCategory.toLowerCase()}@msis.edu`,
     };
 
-    setTickets((prev) => [newTicket, ...prev]);
-    return newTicket;
+    try {
+      const serverTicket = await createTicketOnBackend({
+        subject: input.subject,
+        description: input.description,
+        department: resolvedDepartment,
+        category: resolvedCategory,
+        files: input.files,
+        reporterId: user?.id,
+        reporterEmail: user?.email || optimisticTicket.reporterEmail,
+        reporterName: user?.name || optimisticTicket.reporterName,
+      });
+
+      setTickets((prev) => [serverTicket, ...prev.filter((t) => t.id !== serverTicket.id)]);
+      return serverTicket;
+    } catch (err) {
+      console.warn('Failed to submit ticket to backend MySQL, stored optimistically:', err);
+      setTickets((prev) => [optimisticTicket, ...prev]);
+      return optimisticTicket;
+    }
   };
 
-  const updateTicketStatus = (id: string, status: SupportTicket['status']) => {
+  const updateTicketStatus = (
+    id: string,
+    status: SupportTicket['status'],
+    supportMessage?: string
+  ) => {
     setTickets((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, status } : t))
+      prev.map((t) =>
+        t.id === id
+          ? {
+              ...t,
+              status,
+              ...(supportMessage !== undefined ? { supportMessage } : {}),
+            }
+          : t
+      )
     );
+
+    // Sync with backend API
+    updateTicketStatusOnBackend(id, status, supportMessage, {
+      id: user?.id,
+      name: user?.name,
+      email: user?.email,
+    }).catch((err) => {
+      console.warn('Backend update status failed:', err);
+    });
+  };
+
+  const deleteTicket = (id: string) => {
+    setTickets((prev) => prev.filter((t) => t.id !== id));
+
+    // Sync with backend API
+    deleteTicketOnBackend(id).catch((err) => {
+      console.warn('Backend delete ticket failed:', err);
+    });
   };
 
   const ticketCounts = {
@@ -181,6 +219,7 @@ export const TicketsProvider: React.FC<{ children: React.ReactNode }> = ({ child
         isLoading,
         submitTicket,
         updateTicketStatus,
+        deleteTicket,
         ticketCounts,
         getTicketsForRole,
         refreshTickets,
