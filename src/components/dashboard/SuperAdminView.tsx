@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { SupportTicket } from '../../types';
 import { Card } from '../ui/card';
+import { TicketAttachmentViewer } from '../tickets/TicketAttachmentViewer';
 import {
   ShieldAlert,
   GraduationCap,
@@ -541,18 +542,16 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
                   </p>
                 </div>
 
+                {/* Attached Files & Interactive Viewer */}
                 <div>
-                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">
-                    Attached Files ({selectedTicket.attachmentsCount})
-                  </span>
-                  <div className="p-2.5 rounded-xl border border-slate-200/80 bg-white flex items-center gap-2 text-slate-600 mt-1">
-                    <Paperclip className="h-4 w-4 text-red-600 shrink-0" />
-                    <span className="text-[11px] sm:text-xs">
-                      {selectedTicket.attachmentsCount > 0
-                        ? `${selectedTicket.attachmentsCount} verified attachment files ready for download`
-                        : 'No files attached'}
-                    </span>
-                  </div>
+                  <TicketAttachmentViewer
+                    ticketId={selectedTicket.id}
+                    attachmentsCount={selectedTicket.attachmentsCount}
+                    initialAttachments={selectedTicket.attachments}
+                    onAttachmentsLoaded={(loadedAtts) => {
+                      setSelectedTicket((prev) => (prev ? { ...prev, attachments: loadedAtts } : null));
+                    }}
+                  />
                 </div>
 
                 {/* Status Triage & Support Response Section */}
