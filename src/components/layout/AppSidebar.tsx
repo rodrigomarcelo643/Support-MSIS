@@ -512,14 +512,16 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
 
   return (
     <>
-      {/* 1. Desktop Docked Sidebar Container (Shown on lg and above; md and sm use BottomNav) */}
+      {/* 1. Desktop Docked Sidebar Container (Fixed to the left of the screen) */}
       <div
-        className="hidden lg:block shrink-0 relative h-screen sticky top-0 z-50"
+        className={`hidden lg:block shrink-0 transition-all duration-300 ${
+          isOpen ? 'w-64' : 'w-[72px]'
+        }`}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       >
         <aside
-          className={`bg-white border-r border-slate-200/80 flex flex-col h-screen overflow-y-auto overflow-x-hidden transition-all duration-300 ${
+          className={`fixed top-0 bottom-0 left-0 z-30 bg-white border-r border-slate-200/80 flex flex-col h-screen overflow-y-auto overflow-x-hidden transition-all duration-300 ${
             isOpen ? 'w-64' : 'w-[72px]'
           }`}
         >
@@ -549,7 +551,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -12 }}
                 transition={{ duration: 0.2, ease: 'easeOut' }}
-                className="absolute top-0 left-0 w-64 h-screen bg-white shadow-2xl border-r border-slate-200/90 z-50 overflow-y-auto overflow-x-hidden"
+                className="fixed top-0 left-0 w-64 h-screen bg-white shadow-2xl border-r border-slate-200/90 z-50 overflow-y-auto overflow-x-hidden"
                 onMouseEnter={handleMouseEnter}
                 onMouseLeave={handleMouseLeave}
               >
