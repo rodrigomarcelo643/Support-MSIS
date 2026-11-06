@@ -234,3 +234,29 @@ export async function deleteTicketOnBackend(id: string): Promise<boolean> {
   const data = await response.json();
   return data.status === 'success';
 }
+
+/**
+ * Fetch complete ticket details including all file attachments and audit trail
+ */
+export async function fetchTicketDetails(id: string): Promise<SupportTicket> {
+  const baseUrl = getApiBaseUrl();
+  const endpoint = `${baseUrl}/api/v1/tickets/get.php?id=${encodeURIComponent(id)}`;
+
+  const response = await fetch(endpoint, {
+    method: 'GET',
+    headers: {
+      'Accept': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => null);
+    throw new Error(err?.message || `Failed to fetch ticket details: HTTP ${response.status}`);
+  }
+
+  const data = await response.json();
+  if (data.status === 'success' && data.ticket) {
+    return data.ticket as SupportTicket;
+  }
+  throw new Error(data.message || 'Server did not return ticket details');
+}
