@@ -31,6 +31,8 @@ jobs:
       - name: Build Frontend
         env:
           VITE_BACKEND_URL: ${{ secrets.VITE_BACKEND_URL || 'https://support.swu-som.com' }}
+          VITE_GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID }}
+          VITE_GOOGLE_REDIRECT_URI: ${{ secrets.VITE_GOOGLE_REDIRECT_URI || 'https://support.swu-som.com/auth/google/callback' }}
         run: pnpm build
 
       - name: Prepare Deployment Files
