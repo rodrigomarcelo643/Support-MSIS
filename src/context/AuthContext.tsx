@@ -10,6 +10,16 @@ export interface AuthUser {
   department?: string;
 }
 
+export interface PreviousGoogleAccount {
+  id?: string;
+  email: string;
+  name: string;
+  avatar_url?: string;
+  role?: string;
+  department?: string;
+  lastLoginAt: string;
+}
+
 interface AuthContextType {
   user: AuthUser | null;
   isAuthenticated: boolean;
@@ -17,6 +27,8 @@ interface AuthContextType {
   backendUrl: string;
   signInWithGoogle: (email: string, name?: string, avatar?: string) => Promise<AuthUser>;
   signOut: () => Promise<void>;
+  previousAccount: PreviousGoogleAccount | null;
+  clearPreviousAccount: () => void;
   isLogoutModalOpen: boolean;
   openLogoutModal: () => void;
   closeLogoutModal: () => void;
@@ -36,18 +48,72 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     return null;
   });
+
+  const [previousAccount, setPreviousAccount] = useState<PreviousGoogleAccount | null>(() => {
+    try {
+      const savedPrev = localStorage.getItem('msis_previous_google_account');
+      if (savedPrev) {
+        return JSON.parse(savedPrev);
+      }
+      // Check if active user exists and record as previous account
+      const savedUser = localStorage.getItem('msis_auth_user');
+      if (savedUser) {
+        const u = JSON.parse(savedUser);
+        if (u?.email) {
+          const initialPrev: PreviousGoogleAccount = {
+            id: u.id,
+            email: u.email,
+            name: u.name,
+            avatar_url: u.avatar_url,
+            role: u.role,
+            department: u.department,
+            lastLoginAt: new Date().toISOString(),
+          };
+          localStorage.setItem('msis_previous_google_account', JSON.stringify(initialPrev));
+          return initialPrev;
+        }
+      }
+    } catch {
+      // ignore
+    }
+    return null;
+  });
+
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState<boolean>(false);
 
   const openLogoutModal = () => setIsLogoutModalOpen(true);
   const closeLogoutModal = () => setIsLogoutModalOpen(false);
 
+  const clearPreviousAccount = () => {
+    setPreviousAccount(null);
+    try {
+      localStorage.removeItem('msis_previous_google_account');
+    } catch {
+      // ignore
+    }
+  };
+
   useEffect(() => {
     // Check initial authenticated session
     const saved = localStorage.getItem('msis_auth_user');
     if (saved) {
       try {
-        setUser(JSON.parse(saved));
+        const parsed = JSON.parse(saved);
+        setUser(parsed);
+        if (!localStorage.getItem('msis_previous_google_account') && parsed?.email) {
+          const p: PreviousGoogleAccount = {
+            id: parsed.id,
+            email: parsed.email,
+            name: parsed.name,
+            avatar_url: parsed.avatar_url,
+            role: parsed.role,
+            department: parsed.department,
+            lastLoginAt: new Date().toISOString(),
+          };
+          setPreviousAccount(p);
+          localStorage.setItem('msis_previous_google_account', JSON.stringify(p));
+        }
       } catch {
         setUser(null);
       }
@@ -89,11 +155,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         name: data.user.name,
         role: data.user.role,
         department: data.user.department,
-        avatar_url: data.user.avatar_url,
+        avatar_url: data.user.avatar_url || googleAvatar || '',
       };
 
       setUser(authenticatedUser);
       localStorage.setItem('msis_auth_user', JSON.stringify(authenticatedUser));
+
+      // Persist previous Google account profile for fast re-login and UI display
+      const prevAccount: PreviousGoogleAccount = {
+        id: authenticatedUser.id,
+        email: authenticatedUser.email,
+        name: authenticatedUser.name,
+        avatar_url: authenticatedUser.avatar_url,
+        role: authenticatedUser.role,
+        department: authenticatedUser.department,
+        lastLoginAt: new Date().toISOString(),
+      };
+      setPreviousAccount(prevAccount);
+      localStorage.setItem('msis_previous_google_account', JSON.stringify(prevAccount));
+
       return authenticatedUser;
     } finally {
       setIsLoading(false);
@@ -110,6 +190,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     setUser(null);
     localStorage.removeItem('msis_auth_user');
+    // Note: msis_previous_google_account is intentionally preserved so the login page can display the previous Google account profile!
   };
 
   return (
@@ -121,6 +202,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         backendUrl: BACKEND_URL,
         signInWithGoogle,
         signOut,
+        previousAccount,
+        clearPreviousAccount,
         isLogoutModalOpen,
         openLogoutModal,
         closeLogoutModal,
