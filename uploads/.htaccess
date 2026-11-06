@@ -1,0 +1,22 @@
+# Apache configuration for user-uploaded ticket attachments
+# Located at /uploads/.htaccess
+
+# Disable directory listing
+Options -Indexes
+
+# Prevent PHP / CGI script execution inside the uploads folder for security
+<FilesMatch "\.(php|phtml|php3|php4|php5|php7|php8|phps|cgi|pl|py|sh|bash|exe)$">
+    Order Deny,Allow
+    Deny from all
+</FilesMatch>
+
+# Allow direct fetching and inline rendering of images and safe documents
+<FilesMatch "\.(jpe?g|png|gif|webp|svg|pdf|txt|log|csv)$">
+    Order Allow,Deny
+    Allow from all
+</FilesMatch>
+
+# Add proper MIME types and security headers
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+</IfModule>

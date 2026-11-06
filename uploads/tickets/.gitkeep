@@ -1,0 +1,3 @@
+# Tickets Upload Storage
+# Files uploaded via ticket submission are stored in this directory:
+# /uploads/tickets/{year}/{ticket_code}_{filename}
