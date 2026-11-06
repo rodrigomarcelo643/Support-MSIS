@@ -4,7 +4,7 @@ import { useTickets } from '../../context/TicketsContext';
 import { TrackTicketsSkeleton, usePageSkeleton } from '../../components/ui/skeleton';
 
 export const SuperAdminTicketsPage: React.FC = () => {
-  const { tickets, updateTicketStatus } = useTickets();
+  const { tickets, updateTicketStatus, deleteTicket } = useTickets();
   const isLoading = usePageSkeleton(250);
 
   if (isLoading) {
@@ -16,6 +16,7 @@ export const SuperAdminTicketsPage: React.FC = () => {
       <SuperAdminView
         tickets={tickets}
         onStatusChange={updateTicketStatus}
+        onDeleteTicket={deleteTicket}
       />
     </div>
   );
