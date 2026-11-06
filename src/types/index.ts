@@ -11,4 +11,5 @@ export interface SupportTicket {
   submittedAt: string;
   reporterName?: string;
   reporterEmail?: string;
+  supportMessage?: string;
 }
