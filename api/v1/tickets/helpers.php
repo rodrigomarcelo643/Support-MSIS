@@ -135,6 +135,50 @@ function ensure_ticket_tables_exist(mysqli $conn): void {
 }
 
 /**
+ * Ensures it_support_ticket_user database table exists in MySQL and default Super Admin is seeded
+ */
+function ensure_users_table_exist(mysqli $conn): void {
+    static $usersChecked = false;
+    if ($usersChecked) return;
+
+    $conn->query("
+        CREATE TABLE IF NOT EXISTS `it_support_ticket_user` (
+          `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+          `name` VARCHAR(150) NOT NULL COMMENT 'Full name of administrator / developer',
+          `email` VARCHAR(191) NOT NULL COMMENT 'Unique institutional or Google email',
+          `password` VARCHAR(255) NOT NULL COMMENT 'Bcrypt-hashed password for authentication',
+          `role` ENUM('Super Admin', 'Admin') NOT NULL DEFAULT 'Super Admin',
+          `department` VARCHAR(120) NOT NULL DEFAULT 'MSIS Development & IT Systems',
+          `avatar_url` VARCHAR(500) DEFAULT NULL,
+          `status` ENUM('active', 'inactive', 'suspended') NOT NULL DEFAULT 'active',
+          `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          PRIMARY KEY (`id`),
+          UNIQUE KEY `idx_it_support_user_email` (`email`),
+          KEY `idx_it_support_user_role` (`role`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    ");
+
+    // Check if default Super Admin (medsis798@gmail.com) exists in it_support_ticket_user
+    $checkAdmin = $conn->query("SELECT id FROM `it_support_ticket_user` WHERE LOWER(`email`) = 'medsis798@gmail.com' LIMIT 1");
+    if ($checkAdmin && $checkAdmin->num_rows === 0) {
+        $defaultHash = '$2y$12$9/j4SgSZ8hhkgvJ/c06j5.TakaXCnlF75cjbrcJiiG3i7zL4dtE1G'; // Bcrypt hash for Rodrigo#123
+        $seedStmt = $conn->prepare("
+            INSERT INTO `it_support_ticket_user` (`name`, `email`, `password`, `role`, `department`, `status`)
+            VALUES (?, ?, ?, 'Super Admin', 'MSIS Development & IT Systems', 'active')
+        ");
+        if ($seedStmt) {
+            $name = 'Rodrigo';
+            $email = 'medsis798@gmail.com';
+            $seedStmt->bind_param("sss", $name, $email, $defaultHash);
+            $seedStmt->execute();
+        }
+    }
+
+    $usersChecked = true;
+}
+
+/**
  * Format relative time string e.g. "Just now", "15 mins ago", "2 hours ago"
  */
 function format_relative_time(?string $datetime): string {
