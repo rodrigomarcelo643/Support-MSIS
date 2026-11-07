@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { ToastProvider } from './context/ToastContext';
 import { AuthProvider } from './context/AuthContext';
 import { TicketsProvider } from './context/TicketsContext';
 import { PublicPage } from './pages/PublicPage';
@@ -39,18 +40,22 @@ import { SuperAdminDashboardPage } from './pages/super-admin/SuperAdminDashboard
 import { SuperAdminTicketsPage } from './pages/super-admin/SuperAdminTicketsPage';
 import { SuperAdminActivityPage } from './pages/super-admin/SuperAdminActivityPage';
 
+// Live Whole-Page Ticket Tracking
+import { LiveTicketTrackingPage } from './pages/tickets/LiveTicketTrackingPage';
+
 // Settings Page
 import { RoleSettingsPage } from './pages/settings/RoleSettingsPage';
 import { LogoutConfirmModal } from './components/ui/LogoutConfirmModal';
 
 function App() {
   return (
-    <AuthProvider>
-      <TicketsProvider>
-        <Router>
-          {/* Global Logout Confirmation Modal */}
-          <LogoutConfirmModal />
-          <Routes>
+    <ToastProvider>
+      <AuthProvider>
+        <TicketsProvider>
+          <Router>
+            {/* Global Logout Confirmation Modal */}
+            <LogoutConfirmModal />
+            <Routes>
             {/* Public informative landing page */}
             <Route path="/" element={<PublicPage />} />
 
@@ -72,6 +77,7 @@ function App() {
                   <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
                   <Route path="/admin/submit" element={<AdminSubmitTicketPage />} />
                   <Route path="/admin/tickets" element={<AdminTrackTicketsPage />} />
+                  <Route path="/admin/tickets/:ticketId" element={<LiveTicketTrackingPage />} />
                   <Route path="/admin/activity" element={<AdminActivityPage />} />
                   <Route path="/admin/settings" element={<RoleSettingsPage />} />
                 </Route>
@@ -82,6 +88,7 @@ function App() {
                   <Route path="/faculty/dashboard" element={<FacultyDashboardPage />} />
                   <Route path="/faculty/submit" element={<FacultySubmitTicketPage />} />
                   <Route path="/faculty/tickets" element={<FacultyTrackTicketsPage />} />
+                  <Route path="/faculty/tickets/:ticketId" element={<LiveTicketTrackingPage />} />
                   <Route path="/faculty/activity" element={<FacultyActivityPage />} />
                   <Route path="/faculty/settings" element={<RoleSettingsPage />} />
                 </Route>
@@ -92,6 +99,7 @@ function App() {
                   <Route path="/student/dashboard" element={<StudentDashboardPage />} />
                   <Route path="/student/submit" element={<StudentSubmitTicketPage />} />
                   <Route path="/student/tickets" element={<StudentTrackTicketsPage />} />
+                  <Route path="/student/tickets/:ticketId" element={<LiveTicketTrackingPage />} />
                   <Route path="/student/activity" element={<StudentActivityPage />} />
                   <Route path="/student/settings" element={<RoleSettingsPage />} />
                 </Route>
@@ -102,6 +110,7 @@ function App() {
                   <Route path="/secretary/dashboard" element={<SecretaryDashboardPage />} />
                   <Route path="/secretary/submit" element={<SecretarySubmitTicketPage />} />
                   <Route path="/secretary/tickets" element={<SecretaryTrackTicketsPage />} />
+                  <Route path="/secretary/tickets/:ticketId" element={<LiveTicketTrackingPage />} />
                   <Route path="/secretary/activity" element={<SecretaryActivityPage />} />
                   <Route path="/secretary/settings" element={<RoleSettingsPage />} />
                 </Route>
@@ -111,9 +120,14 @@ function App() {
                   <Route path="/super-admin" element={<Navigate to="/super-admin/dashboard" replace />} />
                   <Route path="/super-admin/dashboard" element={<SuperAdminDashboardPage />} />
                   <Route path="/super-admin/tickets" element={<SuperAdminTicketsPage />} />
+                  <Route path="/super-admin/tickets/:ticketId" element={<LiveTicketTrackingPage />} />
                   <Route path="/super-admin/activity" element={<SuperAdminActivityPage />} />
                   <Route path="/super-admin/settings" element={<RoleSettingsPage />} />
                 </Route>
+
+                {/* Universal Ticket Direct Live Track Route */}
+                <Route path="/track/:ticketId" element={<LiveTicketTrackingPage />} />
+                <Route path="/tickets/:ticketId" element={<LiveTicketTrackingPage />} />
               </Route>
             </Route>
 
@@ -123,6 +137,7 @@ function App() {
         </Router>
       </TicketsProvider>
     </AuthProvider>
+  </ToastProvider>
   );
 }
 
