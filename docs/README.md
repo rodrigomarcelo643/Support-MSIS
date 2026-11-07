@@ -1,6 +1,6 @@
 # MSIS Support • Master Documentation Index
 
-Welcome to the official technical documentation repository for **MSIS Support (Medical Systems & Information Services)** at **Southwestern University PHINMA • School of Medicine**.
+Welcome to the official technical documentation repository for **MSIS Support (Medical Student Information System)** at **Southwestern University PHINMA • School of Medicine**.
 
 This documentation suite is organized using standardized numerical prefixing to ensure a logical reading order, clean discoverability, and long-term maintainability.
 
