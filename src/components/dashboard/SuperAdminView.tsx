@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useNavigate } from 'react-router-dom';
 import type { SupportTicket } from '../../types';
 import { Card } from '../ui/card';
 import { TicketAttachmentViewer } from '../tickets/TicketAttachmentViewer';
+import { formatRelativeTime, formatBadgeCount } from '../../lib/utils';
 import {
   ShieldAlert,
   GraduationCap,
@@ -17,7 +19,10 @@ import {
   ChevronRight,
   MessageSquare,
   Trash2,
-  AlertTriangle
+  AlertTriangle,
+  Clock,
+  Radio,
+  ExternalLink
 } from 'lucide-react';
 
 interface SuperAdminViewProps {
@@ -35,6 +40,7 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
   onFilterRoleChange,
   onDeleteTicket,
 }) => {
+  const navigate = useNavigate();
   const [selectedRoleFilter, setSelectedRoleFilter] = useState<string>(activeFilterRole);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
@@ -44,6 +50,22 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [rowsPerPage, setRowsPerPage] = useState<number>(10);
+
+  // Synchronize inspect modal ticket details in real time if open
+  React.useEffect(() => {
+    if (!selectedTicket) return;
+    const match = tickets.find((t) => t.id === selectedTicket.id);
+    if (
+      match &&
+      (match.status !== selectedTicket.status ||
+        match.supportMessage !== selectedTicket.supportMessage ||
+        match.updatedAt !== selectedTicket.updatedAt)
+    ) {
+      setSelectedTicket(match);
+      setModalStatus(match.status);
+      setAdminMessage(match.supportMessage || '');
+    }
+  }, [tickets, selectedTicket]);
 
   const handleOpenInspect = (ticket: SupportTicket) => {
     setSelectedTicket(ticket);
@@ -142,6 +164,13 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
             <span>Dispatched</span>
           </span>
         );
+      case 'Closed':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 text-slate-700 border border-slate-300 shadow-2xs">
+            <span className="h-1.5 w-1.5 rounded-full bg-slate-500" />
+            <span>Closed</span>
+          </span>
+        );
     }
   };
 
@@ -150,7 +179,7 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
       {/* Super Admin Notice Bar */}
       <div className="p-3.5 sm:p-4 rounded-2xl bg-white border border-slate-200/90 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0 flex-1">
-          <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl bg-slate-900 text-white flex items-center justify-center font-bold text-xs shrink-0">
+          <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl bg-red-600 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
             SA
           </div>
           <div className="min-w-0 flex-1">
@@ -181,7 +210,7 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
               <Eye className="h-3.5 w-3.5" />
             </div>
           </div>
-          <span className="text-xl sm:text-2xl font-extrabold text-slate-900 block">{tickets.length}</span>
+          <span className="text-xl sm:text-2xl font-extrabold text-slate-900 block">{formatBadgeCount(tickets.length)}</span>
           <p className="text-[10px] text-slate-400 mt-0.5 truncate">Across 4 user categories</p>
         </Card>
 
@@ -193,7 +222,7 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
             </div>
           </div>
           <span className="text-xl sm:text-2xl font-extrabold text-slate-900 block">
-            {tickets.filter((t) => t.category === 'Student' || t.category === 'Faculty').length}
+            {formatBadgeCount(tickets.filter((t) => t.category === 'Student' || t.category === 'Faculty').length)}
           </span>
           <p className="text-[10px] text-slate-400 mt-0.5 truncate">Academic submissions</p>
         </Card>
@@ -206,7 +235,7 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
             </div>
           </div>
           <span className="text-xl sm:text-2xl font-extrabold text-slate-900 block">
-            {tickets.filter((t) => t.category === 'Secretary' || t.category === 'Admin').length}
+            {formatBadgeCount(tickets.filter((t) => t.category === 'Secretary' || t.category === 'Admin').length)}
           </span>
           <p className="text-[10px] text-slate-400 mt-0.5 truncate">Operational submissions</p>
         </Card>
@@ -245,7 +274,7 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
               className={`px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
                 selectedRoleFilter === role.id ||
                 selectedRoleFilter === `${role.id}-tickets`
-                  ? 'bg-slate-900 text-white shadow-xs'
+                  ? 'bg-red-600 text-white shadow-xs'
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
@@ -278,12 +307,27 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
             <div key={ticket.id} className="p-3.5 space-y-2.5">
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-1.5">
-                  <span className="font-mono text-[11px] text-red-600 font-bold whitespace-nowrap">
-                    #{ticket.id}
-                  </span>
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/super-admin/tickets/${ticket.id}`)}
+                    className="font-mono text-[11px] text-red-600 font-bold whitespace-nowrap hover:underline inline-flex items-center gap-1 cursor-pointer"
+                    title="Open live whole page tracking"
+                  >
+                    <span>#{ticket.id}</span>
+                    <Radio className="h-2.5 w-2.5 text-emerald-500 animate-pulse shrink-0" />
+                  </button>
                   {getRoleBadge(ticket.category)}
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/super-admin/tickets/${ticket.id}`)}
+                    className="px-2 py-1 text-xs font-bold text-red-700 bg-red-50 hover:bg-red-100 border border-red-200/80 rounded-lg transition-colors cursor-pointer whitespace-nowrap shadow-2xs flex items-center gap-1"
+                    title="Open live whole page tracking"
+                  >
+                    <Radio className="h-3 w-3 text-red-600 animate-pulse shrink-0" />
+                    <span>Live Track</span>
+                  </button>
                   <button
                     type="button"
                     onClick={() => handleOpenInspect(ticket)}
@@ -326,8 +370,12 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
                   )}
                 </div>
 
-                <div>
+                <div className="flex flex-col items-end gap-1">
                   {getStatusBadge(ticket.status)}
+                  <span className="text-[10px] text-slate-400 font-medium flex items-center gap-1">
+                    <Clock className="h-2.5 w-2.5 text-slate-400" />
+                    <span>Updated {ticket.updatedRelative || formatRelativeTime(ticket.updatedAt || ticket.createdAt || ticket.submittedAt)}</span>
+                  </span>
                 </div>
               </div>
             </div>
@@ -358,7 +406,15 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
               {paginatedTickets.map((ticket) => (
                 <tr key={ticket.id} className="hover:bg-slate-50/80 transition-colors">
                   <td className="py-3.5 px-4 font-mono text-[11px] text-red-600 font-bold whitespace-nowrap">
-                    #{ticket.id}
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/super-admin/tickets/${ticket.id}`)}
+                      className="hover:underline inline-flex items-center gap-1 cursor-pointer group"
+                      title="Open live whole page tracking"
+                    >
+                      <span className="group-hover:text-red-700">#{ticket.id}</span>
+                      <Radio className="h-2.5 w-2.5 text-emerald-500 animate-pulse shrink-0" />
+                    </button>
                   </td>
                   <td className="py-3.5 px-4 whitespace-nowrap">{getRoleBadge(ticket.category)}</td>
                   <td className="py-3.5 px-4 font-semibold text-slate-800 whitespace-nowrap">
@@ -385,10 +441,25 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
                     )}
                   </td>
                   <td className="py-3.5 px-4 whitespace-nowrap">
-                    {getStatusBadge(ticket.status)}
+                    <div className="flex flex-col items-start gap-1">
+                      {getStatusBadge(ticket.status)}
+                      <span className="text-[10px] text-slate-400 font-medium flex items-center gap-1">
+                        <Clock className="h-2.5 w-2.5 text-slate-400" />
+                        <span>Updated {ticket.updatedRelative || formatRelativeTime(ticket.updatedAt || ticket.createdAt || ticket.submittedAt)}</span>
+                      </span>
+                    </div>
                   </td>
                   <td className="py-3.5 px-4 text-right whitespace-nowrap">
                     <div className="flex items-center justify-end gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/super-admin/tickets/${ticket.id}`)}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold text-red-700 bg-red-50 hover:bg-red-100 border border-red-200/80 rounded-lg transition-colors cursor-pointer shadow-2xs"
+                        title="Open live whole page tracking with step-by-step indicators"
+                      >
+                        <Radio className="h-3 w-3 text-red-600 animate-pulse shrink-0" />
+                        <span>Live Track</span>
+                      </button>
                       <button
                         type="button"
                         onClick={() => handleOpenInspect(ticket)}
@@ -475,7 +546,7 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
                           onClick={() => setCurrentPage(page)}
                           className={`h-8 min-w-[32px] px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                             safeCurrentPage === page
-                              ? 'bg-slate-900 text-white shadow-xs'
+                              ? 'bg-red-600 text-white shadow-xs'
                               : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'
                           }`}
                         >
@@ -518,14 +589,30 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
                   </span>
                   {getRoleBadge(selectedTicket.category)}
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setSelectedTicket(null)}
-                  className="h-8 w-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center text-sm font-bold transition-colors cursor-pointer"
-                  title="Close"
-                >
-                  ✕
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const id = selectedTicket.id;
+                      setSelectedTicket(null);
+                      navigate(`/super-admin/tickets/${id}`);
+                    }}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 transition-colors cursor-pointer shadow-2xs"
+                    title="Open Live Full-Page Tracking with Step-by-Step Indicators"
+                  >
+                    <Radio className="h-3 w-3 text-red-600 animate-pulse shrink-0" />
+                    <span className="hidden sm:inline">Live Tracker</span>
+                    <ExternalLink className="h-3 w-3 text-red-500 shrink-0" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedTicket(null)}
+                    className="h-8 w-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center text-sm font-bold transition-colors cursor-pointer"
+                    title="Close"
+                  >
+                    ✕
+                  </button>
+                </div>
               </div>
 
               {/* Modal Body (Scrollable) */}
@@ -572,10 +659,16 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
                 {/* Status Triage & Support Response Section */}
                 <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2.5">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider flex items-center gap-1.5">
-                      <MessageSquare className="h-3.5 w-3.5 text-red-600 shrink-0" />
-                      Status Triage
-                    </span>
+                    <div className="flex flex-col">
+                      <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                        <MessageSquare className="h-3.5 w-3.5 text-red-600 shrink-0" />
+                        Status Triage
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-medium flex items-center gap-1 mt-0.5">
+                        <Clock className="h-2.5 w-2.5 text-slate-400" />
+                        <span>Last progress: {selectedTicket.updatedRelative || formatRelativeTime(selectedTicket.updatedAt || selectedTicket.createdAt || selectedTicket.submittedAt)}</span>
+                      </span>
+                    </div>
                     <select
                       value={modalStatus}
                       onChange={(e) => {
@@ -588,13 +681,16 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
                           ? 'bg-amber-50 text-amber-700 border-amber-300'
                           : modalStatus === 'Investigating'
                           ? 'bg-sky-50 text-sky-700 border-sky-300'
-                          : 'bg-purple-50 text-purple-700 border-purple-300'
+                          : modalStatus === 'Dispatched'
+                          ? 'bg-purple-50 text-purple-700 border-purple-300'
+                          : 'bg-slate-100 text-slate-700 border-slate-300'
                       }`}
                     >
                       <option value="In Progress">In Progress</option>
                       <option value="Investigating">Investigating</option>
-                      <option value="Resolved">Resolved</option>
                       <option value="Dispatched">Dispatched</option>
+                      <option value="Resolved">Resolved</option>
+                      <option value="Closed">Closed</option>
                     </select>
                   </div>
 
