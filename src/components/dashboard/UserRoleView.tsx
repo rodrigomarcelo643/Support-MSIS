@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useNavigate } from 'react-router-dom';
 import type { SupportTicket, UserRole } from '../../types';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../ui/card';
 import { Button } from '../ui/button';
 import { FileUpload, type UploadedFile } from '../ui/file-upload';
 import { TicketAttachmentViewer } from '../tickets/TicketAttachmentViewer';
+import { formatRelativeTime } from '../../lib/utils';
 import {
   Send,
   PlusCircle,
@@ -19,7 +21,10 @@ import {
   Trash2,
   AlertTriangle,
   MessageSquare,
-  Eye
+  Eye,
+  Clock,
+  Radio,
+  ExternalLink
 } from 'lucide-react';
 
 interface UserRoleViewProps {
@@ -46,6 +51,8 @@ export const UserRoleView: React.FC<UserRoleViewProps> = ({
   onStatusChange: _onStatusChange,
   onDeleteTicket,
 }) => {
+  const navigate = useNavigate();
+  const roleSlug = currentRole.toLowerCase();
   const [subject, setSubject] = useState('');
   const [description, setDescription] = useState('');
   const [files, setFiles] = useState<UploadedFile[]>([]);
@@ -54,6 +61,60 @@ export const UserRoleView: React.FC<UserRoleViewProps> = ({
   const [ticketSearch, setTicketSearch] = useState('');
   const [ticketToDelete, setTicketToDelete] = useState<SupportTicket | null>(null);
   const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
+
+  // Synchronize modal ticket details in real time if open
+  React.useEffect(() => {
+    if (!selectedTicket) return;
+    const match = tickets.find((t) => t.id === selectedTicket.id);
+    if (
+      match &&
+      (match.status !== selectedTicket.status ||
+        match.supportMessage !== selectedTicket.supportMessage ||
+        match.updatedAt !== selectedTicket.updatedAt)
+    ) {
+      setSelectedTicket(match);
+    }
+  }, [tickets, selectedTicket]);
+
+  const getStatusBadge = (status: SupportTicket['status']) => {
+    switch (status) {
+      case 'Resolved':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold border shadow-2xs whitespace-nowrap bg-emerald-50 text-emerald-700 border-emerald-200/80">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+            <span>Resolved</span>
+          </span>
+        );
+      case 'In Progress':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold border shadow-2xs whitespace-nowrap bg-amber-50 text-amber-700 border-amber-200/80">
+            <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+            <span>In Progress</span>
+          </span>
+        );
+      case 'Investigating':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold border shadow-2xs whitespace-nowrap bg-sky-50 text-sky-700 border-sky-200/80">
+            <span className="h-1.5 w-1.5 rounded-full bg-sky-500 animate-pulse" />
+            <span>Investigating</span>
+          </span>
+        );
+      case 'Dispatched':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold border shadow-2xs whitespace-nowrap bg-purple-50 text-purple-700 border-purple-200/80">
+            <span className="h-1.5 w-1.5 rounded-full bg-purple-500" />
+            <span>Dispatched</span>
+          </span>
+        );
+      case 'Closed':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold border shadow-2xs whitespace-nowrap bg-slate-100 text-slate-700 border-slate-300">
+            <span className="h-1.5 w-1.5 rounded-full bg-slate-500" />
+            <span>Closed</span>
+          </span>
+        );
+    }
+  };
 
   // Filter only tickets that belong to the active user role
   const myRoleTickets = tickets.filter((t) => t.category === currentRole);
@@ -313,31 +374,8 @@ export const UserRoleView: React.FC<UserRoleViewProps> = ({
                         </span>
 
                         <div className="flex items-center gap-1.5">
-                          {/* Read-Only Status Badge (Only Super Admin can mutate status) */}
-                          <span
-                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold border shadow-2xs ${
-                              ticket.status === 'Resolved'
-                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200/80'
-                                : ticket.status === 'In Progress'
-                                ? 'bg-amber-50 text-amber-700 border-amber-200/80'
-                                : ticket.status === 'Investigating'
-                                ? 'bg-sky-50 text-sky-700 border-sky-200/80'
-                                : 'bg-purple-50 text-purple-700 border-purple-200/80'
-                            }`}
-                          >
-                            <span
-                              className={`h-1.5 w-1.5 rounded-full ${
-                                ticket.status === 'Resolved'
-                                  ? 'bg-emerald-500'
-                                  : ticket.status === 'In Progress'
-                                  ? 'bg-amber-500 animate-pulse'
-                                  : ticket.status === 'Investigating'
-                                  ? 'bg-sky-500 animate-pulse'
-                                  : 'bg-purple-500'
-                              }`}
-                            />
-                            <span>{ticket.status}</span>
-                          </span>
+                          {/* Read-Only Status Badge */}
+                          {getStatusBadge(ticket.status)}
 
                           {/* Details Button */}
                           <button
@@ -421,7 +459,15 @@ export const UserRoleView: React.FC<UserRoleViewProps> = ({
                       {filteredMyTickets.map((ticket) => (
                         <tr key={ticket.id} className="hover:bg-slate-50/80 transition-colors">
                           <td className="py-3.5 px-4 font-mono text-[11px] text-red-600 font-bold whitespace-nowrap">
-                            #{ticket.id}
+                            <button
+                              type="button"
+                              onClick={() => navigate(`/${roleSlug}/tickets/${ticket.id}`)}
+                              className="hover:underline inline-flex items-center gap-1 cursor-pointer group"
+                              title="Open live whole page tracking"
+                            >
+                              <span className="group-hover:text-red-700">#{ticket.id}</span>
+                              <Radio className="h-2.5 w-2.5 text-emerald-500 animate-pulse shrink-0" />
+                            </button>
                           </td>
                           <td className="py-3.5 px-4 font-semibold text-slate-800 whitespace-nowrap">
                             {ticket.department}
@@ -453,37 +499,29 @@ export const UserRoleView: React.FC<UserRoleViewProps> = ({
                             )}
                           </td>
                           <td className="py-3.5 px-4 whitespace-nowrap">
-                            {/* Read-Only Status Badge (Only Super Admin can change status) */}
-                            <span
-                              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold border shadow-2xs ${
-                                ticket.status === 'Resolved'
-                                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200/80'
-                                  : ticket.status === 'In Progress'
-                                  ? 'bg-amber-50 text-amber-700 border-amber-200/80'
-                                  : ticket.status === 'Investigating'
-                                  ? 'bg-sky-50 text-sky-700 border-sky-200/80'
-                                  : 'bg-purple-50 text-purple-700 border-purple-200/80'
-                              }`}
-                            >
-                              <span
-                                className={`h-1.5 w-1.5 rounded-full ${
-                                  ticket.status === 'Resolved'
-                                    ? 'bg-emerald-500'
-                                    : ticket.status === 'In Progress'
-                                    ? 'bg-amber-500 animate-pulse'
-                                    : ticket.status === 'Investigating'
-                                    ? 'bg-sky-500 animate-pulse'
-                                    : 'bg-purple-500'
-                                }`}
-                              />
-                              <span>{ticket.status}</span>
-                            </span>
+                            {/* Read-Only Status Badge with updated progress time */}
+                            <div className="flex flex-col items-start gap-1">
+                              {getStatusBadge(ticket.status)}
+                              <span className="text-[10px] text-slate-400 font-medium flex items-center gap-1">
+                                <Clock className="h-2.5 w-2.5 text-slate-400" />
+                                <span>Updated {ticket.updatedRelative || formatRelativeTime(ticket.updatedAt || ticket.createdAt || ticket.submittedAt)}</span>
+                              </span>
+                            </div>
                           </td>
                           <td className="py-3.5 px-4 text-[11px] text-slate-400 whitespace-nowrap">
                             {ticket.submittedAt}
                           </td>
                           <td className="py-3.5 px-4 text-right whitespace-nowrap">
                             <div className="flex items-center justify-end gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => navigate(`/${roleSlug}/tickets/${ticket.id}`)}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold text-red-700 bg-red-50 hover:bg-red-100 border border-red-200/80 transition-colors cursor-pointer shadow-2xs"
+                                title="Open live whole page tracking with step-by-step indicators"
+                              >
+                                <Radio className="h-3 w-3 text-red-600 animate-pulse shrink-0" />
+                                <span>Live Track</span>
+                              </button>
                               <button
                                 type="button"
                                 onClick={() => setSelectedTicket(ticket)}
@@ -583,14 +621,30 @@ export const UserRoleView: React.FC<UserRoleViewProps> = ({
                 <span className="font-mono text-sm sm:text-base font-bold text-red-600">
                   #{selectedTicket.id}
                 </span>
-                <button
-                  type="button"
-                  onClick={() => setSelectedTicket(null)}
-                  className="h-8 w-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center text-sm font-bold transition-colors cursor-pointer"
-                  title="Close"
-                >
-                  ✕
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const id = selectedTicket.id;
+                      setSelectedTicket(null);
+                      navigate(`/${roleSlug}/tickets/${id}`);
+                    }}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 transition-colors cursor-pointer shadow-2xs"
+                    title="Open Live Full-Page Tracking with Step-by-Step Indicators"
+                  >
+                    <Radio className="h-3 w-3 text-red-600 animate-pulse shrink-0" />
+                    <span className="hidden sm:inline">Live Tracker</span>
+                    <ExternalLink className="h-3 w-3 text-red-500 shrink-0" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedTicket(null)}
+                    className="h-8 w-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center text-sm font-bold transition-colors cursor-pointer"
+                    title="Close"
+                  >
+                    ✕
+                  </button>
+                </div>
               </div>
 
               {/* Modal Body */}
@@ -619,30 +673,7 @@ export const UserRoleView: React.FC<UserRoleViewProps> = ({
                     <MessageSquare className="h-3.5 w-3.5 text-red-600 shrink-0" />
                     Current Status
                   </span>
-                  <span
-                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold border shadow-2xs ${
-                      selectedTicket.status === 'Resolved'
-                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200/80'
-                        : selectedTicket.status === 'In Progress'
-                        ? 'bg-amber-50 text-amber-700 border-amber-200/80'
-                        : selectedTicket.status === 'Investigating'
-                        ? 'bg-sky-50 text-sky-700 border-sky-200/80'
-                        : 'bg-purple-50 text-purple-700 border-purple-200/80'
-                    }`}
-                  >
-                    <span
-                      className={`h-1.5 w-1.5 rounded-full ${
-                        selectedTicket.status === 'Resolved'
-                          ? 'bg-emerald-500'
-                          : selectedTicket.status === 'In Progress'
-                          ? 'bg-amber-500 animate-pulse'
-                          : selectedTicket.status === 'Investigating'
-                          ? 'bg-sky-500 animate-pulse'
-                          : 'bg-purple-500'
-                      }`}
-                    />
-                    <span>{selectedTicket.status}</span>
-                  </span>
+                  {getStatusBadge(selectedTicket.status)}
                 </div>
 
                 {/* Support Response if present */}
