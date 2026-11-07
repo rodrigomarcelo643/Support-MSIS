@@ -330,6 +330,9 @@ function build_ticket_progress_email_html(
     $statusPillText = $activeTheme['badgeText'];
     $statusPillBorder = $activeTheme['activeBorder'];
 
+    // Official project font stack matching frontend (Plus Jakarta Sans)
+    $fontFamily = "'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+
     // Build Step-by-Step UI Items
     $stepsHtml = '';
     foreach ($stages as $idx => $st) {
@@ -345,29 +348,29 @@ function build_ticket_progress_email_html(
         $descColor = $isCurrent ? '#475569' : ($isCompleted ? '#64748b' : '#94a3b8');
 
         $currentBadge = $isCurrent
-            ? "<span style=\"display:inline-block;margin-left:8px;padding:2px 8px;font-size:10px;font-weight:800;letter-spacing:0.5px;color:{$activeTheme['badgeText']};background:{$activeTheme['badgeBg']};border-radius:999px;border:1px solid {$activeTheme['activeBorder']};text-transform:uppercase;\">CURRENT STAGE</span>"
-            : ($isCompleted ? '<span style="display:inline-block;margin-left:8px;padding:1px 6px;font-size:9px;font-weight:700;color:#047857;background:#d1fae5;border-radius:999px;">Completed</span>' : '');
+            ? "<span style=\"display:inline-block;margin-left:8px;padding:2px 8px;font-size:10px;font-weight:800;letter-spacing:0.5px;color:{$activeTheme['badgeText']};background:{$activeTheme['badgeBg']};border-radius:999px;border:1px solid {$activeTheme['activeBorder']};text-transform:uppercase;font-family:{$fontFamily};\">CURRENT STAGE</span>"
+            : ($isCompleted ? "<span style=\"display:inline-block;margin-left:8px;padding:1px 6px;font-size:9px;font-weight:700;color:#047857;background:#d1fae5;border-radius:999px;font-family:{$fontFamily};\">Completed</span>" : '');
 
         $cardBg = $isCurrent ? $activeTheme['activeBg'] : '#ffffff';
         $cardBorder = $isCurrent ? "1px solid {$activeTheme['activeBorder']}" : '1px solid #f1f5f9';
 
         $stepsHtml .= "
         <tr>
-            <td style=\"vertical-align: top; width: 44px; text-align: center; padding-right: 12px;\">
-                <div style=\"width: 32px; height: 32px; border-radius: 50%; background: {$nodeBg}; color: {$nodeColor}; border: 2px solid {$nodeBorder}; font-size: 13px; font-weight: 800; line-height: 28px; text-align: center; margin: 0 auto; box-shadow: " . ($isCurrent ? "0 0 0 3px rgba(16, 185, 129, 0.2)" : "none") . ";\">
+            <td style=\"vertical-align: top; width: 44px; text-align: center; padding-right: 12px; font-family: {$fontFamily};\">
+                <div style=\"width: 32px; height: 32px; border-radius: 50%; background: {$nodeBg}; color: {$nodeColor}; border: 2px solid {$nodeBorder}; font-size: 13px; font-weight: 800; line-height: 28px; text-align: center; margin: 0 auto; font-family: {$fontFamily}; box-shadow: " . ($isCurrent ? "0 0 0 3px rgba(16, 185, 129, 0.2)" : "none") . ";\">
                     {$nodeContent}
                 </div>
                 " . ($idx < count($stages) - 1 ? "<div style=\"width: 2px; height: 34px; margin: 4px auto 0; background: " . ($isCompleted ? "#10b981" : "#e2e8f0") . ";\"></div>" : "") . "
             </td>
-            <td style=\"vertical-align: top; padding-bottom: 16px;\">
-                <div style=\"background: {$cardBg}; border: {$cardBorder}; border-radius: 12px; padding: 10px 14px;\">
-                    <div style=\"font-size: 13px; font-weight: 800; color: {$titleColor};\">
+            <td style=\"vertical-align: top; padding-bottom: 16px; font-family: {$fontFamily};\">
+                <div style=\"background: {$cardBg}; border: {$cardBorder}; border-radius: 12px; padding: 10px 14px; font-family: {$fontFamily};\">
+                    <div style=\"font-size: 13px; font-weight: 800; color: {$titleColor}; font-family: {$fontFamily};\">
                         {$st['name']} {$currentBadge}
                     </div>
-                    <div style=\"font-size: 11px; font-weight: 600; color: " . ($isCurrent ? $activeTheme['activeColor'] : '#64748b') . "; margin-top: 1px;\">
+                    <div style=\"font-size: 11px; font-weight: 600; color: " . ($isCurrent ? $activeTheme['activeColor'] : '#64748b') . "; margin-top: 1px; font-family: {$fontFamily};\">
                         {$st['badge']}
                     </div>
-                    <div style=\"font-size: 11px; color: {$descColor}; line-height: 1.45; margin-top: 4px;\">
+                    <div style=\"font-size: 11px; color: {$descColor}; line-height: 1.45; margin-top: 4px; font-family: {$fontFamily};\">
                         {$st['summary']}
                     </div>
                 </div>
@@ -379,14 +382,14 @@ function build_ticket_progress_email_html(
     $supportBlock = '';
     if ($supportMsgClean) {
         $supportBlock = "
-        <div style=\"margin: 22px 0 16px; padding: 14px 18px; background-color: #f0f9ff; border-left: 4px solid #0284c7; border-radius: 12px; border-top: 1px solid #e0f2fe; border-right: 1px solid #e0f2fe; border-bottom: 1px solid #e0f2fe;\">
-            <div style=\"font-size: 10px; font-weight: 800; color: #0369a1; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 4px;\">
+        <div style=\"margin: 22px 0 16px; padding: 14px 18px; background-color: #f0f9ff; border-left: 4px solid #0284c7; border-radius: 12px; border-top: 1px solid #e0f2fe; border-right: 1px solid #e0f2fe; border-bottom: 1px solid #e0f2fe; font-family: {$fontFamily};\">
+            <div style=\"font-size: 10px; font-weight: 800; color: #0369a1; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 4px; font-family: {$fontFamily};\">
                 &#9993; Direct Message from Technical Support Staff
             </div>
-            <div style=\"font-size: 13px; font-style: italic; color: #1e293b; line-height: 1.5; font-weight: 500;\">
+            <div style=\"font-size: 13px; font-style: italic; color: #1e293b; line-height: 1.5; font-weight: 500; font-family: {$fontFamily};\">
                 &ldquo;{$supportMsgClean}&rdquo;
             </div>
-            <div style=\"font-size: 10px; font-weight: 700; color: #64748b; margin-top: 6px;\">
+            <div style=\"font-size: 10px; font-weight: 700; color: #64748b; margin-top: 6px; font-family: {$fontFamily};\">
                 &mdash; {$adminName} &bull; MSIS Technical & Systems Team
             </div>
         </div>";
@@ -401,26 +404,36 @@ function build_ticket_progress_email_html(
     <meta charset=\"UTF-8\">
     <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
     <title>Ticket Progress Update: {$ticketCode}</title>
+    <!-- Plus Jakarta Sans Font (Matching MSIS Project Typography) -->
+    <link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">
+    <link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin>
+    <link href=\"https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap\" rel=\"stylesheet\">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');
+        body, table, td, div, span, p, a, strong, b {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+        }
+    </style>
 </head>
-<body style=\"margin: 0; padding: 0; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #0f172a;\">
-    <table role=\"presentation\" width=\"100%\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\" style=\"background-color: #f8fafc; padding: 24px 12px;\">
+<body style=\"margin: 0; padding: 0; background-color: #f8fafc; font-family: {$fontFamily}; color: #0f172a; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;\">
+    <table role=\"presentation\" width=\"100%\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\" style=\"background-color: #f8fafc; padding: 24px 12px; font-family: {$fontFamily};\">
         <tr>
             <td align=\"center\">
-                <table role=\"presentation\" width=\"100%\" max-width=\"620\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\" style=\"max-width: 620px; background-color: #ffffff; border-radius: 20px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05); text-align: left;\">
+                <table role=\"presentation\" width=\"100%\" max-width=\"620\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\" style=\"max-width: 620px; background-color: #ffffff; border-radius: 20px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05); text-align: left; font-family: {$fontFamily};\">
                     
                     <!-- Header Banner -->
                     <tr>
-                        <td style=\"background: linear-gradient(135deg, #991b1b 0%, #b91c1c 50%, #dc2626 100%); padding: 24px 28px; text-align: left;\">
-                            <table role=\"presentation\" width=\"100%\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\">
+                        <td style=\"background: linear-gradient(135deg, #991b1b 0%, #b91c1c 50%, #dc2626 100%); padding: 24px 28px; text-align: left; font-family: {$fontFamily};\">
+                            <table role=\"presentation\" width=\"100%\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\" style=\"font-family: {$fontFamily};\">
                                 <tr>
                                     <td>
-                                        <div style=\"font-size: 10px; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase; color: #fecaca; margin-bottom: 4px;\">
+                                        <div style=\"font-size: 10px; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase; color: #fecaca; margin-bottom: 4px; font-family: {$fontFamily};\">
                                             Southwestern University PHINMA
                                         </div>
-                                        <div style=\"font-size: 20px; font-weight: 900; color: #ffffff; letter-spacing: -0.3px; line-height: 1.2;\">
+                                        <div style=\"font-size: 20px; font-weight: 900; color: #ffffff; letter-spacing: -0.3px; line-height: 1.2; font-family: {$fontFamily};\">
                                             MSIS Support Ticket System
                                         </div>
-                                        <div style=\"font-size: 11px; color: #fee2e2; margin-top: 4px; font-weight: 500;\">
+                                        <div style=\"font-size: 11px; color: #fee2e2; margin-top: 4px; font-weight: 500; font-family: {$fontFamily};\">
                                             School of Medicine & Allied Health Sciences &bull; Technical Triage
                                         </div>
                                     </td>
@@ -436,32 +449,32 @@ function build_ticket_progress_email_html(
 
                     <!-- Body Content -->
                     <tr>
-                        <td style=\"padding: 28px 28px 24px;\">
+                        <td style=\"padding: 28px 28px 24px; font-family: {$fontFamily};\">
                             <!-- Greeting & High-level Status -->
-                            <div style=\"font-size: 14px; font-weight: 600; color: #475569;\">
+                            <div style=\"font-size: 14px; font-weight: 600; color: #475569; font-family: {$fontFamily};\">
                                 Dear <strong style=\"color: #0f172a;\">{$reporterName}</strong>,
                             </div>
-                            <div style=\"font-size: 13px; color: #334155; line-height: 1.55; margin-top: 6px;\">
+                            <div style=\"font-size: 13px; color: #334155; line-height: 1.55; margin-top: 6px; font-family: {$fontFamily};\">
                                 Your submitted technical support ticket has advanced to a new stage in our engineering triage process.
                             </div>
 
                             <!-- Current Level Highlight Card -->
-                            <div style=\"margin: 18px 0 20px; padding: 16px 18px; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px;\">
-                                <table role=\"presentation\" width=\"100%\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\">
+                            <div style=\"margin: 18px 0 20px; padding: 16px 18px; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; font-family: {$fontFamily};\">
+                                <table role=\"presentation\" width=\"100%\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\" style=\"font-family: {$fontFamily};\">
                                     <tr>
                                         <td>
-                                            <div style=\"font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.8px;\">
+                                            <div style=\"font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.8px; font-family: {$fontFamily};\">
                                                 Current Triage Status
                                             </div>
-                                            <div style=\"font-size: 18px; font-weight: 900; color: #0f172a; margin-top: 2px;\">
+                                            <div style=\"font-size: 18px; font-weight: 900; color: #0f172a; margin-top: 2px; font-family: {$fontFamily};\">
                                                 {$newStatus}
                                             </div>
-                                            <div style=\"font-size: 11px; font-weight: 600; color: {$activeTheme['activeColor']}; margin-top: 2px;\">
+                                            <div style=\"font-size: 11px; font-weight: 600; color: {$activeTheme['activeColor']}; margin-top: 2px; font-family: {$fontFamily};\">
                                                 Level {$currentLevelNum} of 5 &bull; {$currentStage['badge']}
                                             </div>
                                         </td>
                                         <td align=\"right\" style=\"vertical-align: middle;\">
-                                            <span style=\"display: inline-block; padding: 6px 14px; font-size: 11px; font-weight: 800; color: {$statusPillText}; background-color: {$statusPillBg}; border: 1px solid {$statusPillBorder}; border-radius: 999px; text-transform: uppercase; letter-spacing: 0.5px;\">
+                                            <span style=\"display: inline-block; padding: 6px 14px; font-size: 11px; font-weight: 800; color: {$statusPillText}; background-color: {$statusPillBg}; border: 1px solid {$statusPillBorder}; border-radius: 999px; text-transform: uppercase; letter-spacing: 0.5px; font-family: {$fontFamily};\">
                                                 {$newStatus}
                                             </span>
                                         </td>
@@ -473,19 +486,19 @@ function build_ticket_progress_email_html(
                                     <div style=\"width: 100%; height: 7px; background-color: #e2e8f0; border-radius: 999px; overflow: hidden;\">
                                         <div style=\"width: {$progressPercent}%; height: 100%; background-color: {$activeTheme['activeColor']}; border-radius: 999px;\"></div>
                                     </div>
-                                    <div style=\"font-size: 10px; color: #64748b; font-weight: 600; margin-top: 5px; text-align: right;\">
+                                    <div style=\"font-size: 10px; color: #64748b; font-weight: 600; margin-top: 5px; text-align: right; font-family: {$fontFamily};\">
                                         {$progressPercent}% Completed Across SLA Pipeline
                                     </div>
                                 </div>
                             </div>
 
                             <!-- Step by Step Visual Stepper -->
-                            <div style=\"margin: 22px 0 10px;\">
-                                <div style=\"font-size: 11px; font-weight: 800; color: #0f172a; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 12px;\">
+                            <div style=\"margin: 22px 0 10px; font-family: {$fontFamily};\">
+                                <div style=\"font-size: 11px; font-weight: 800; color: #0f172a; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 12px; font-family: {$fontFamily};\">
                                     Step-by-Step Lifecycle Progress
                                 </div>
 
-                                <table role=\"presentation\" width=\"100%\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\">
+                                <table role=\"presentation\" width=\"100%\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\" style=\"font-family: {$fontFamily};\">
                                     {$stepsHtml}
                                 </table>
                             </div>
@@ -493,36 +506,36 @@ function build_ticket_progress_email_html(
                             {$supportBlock}
 
                             <!-- Ticket Summary Specifications -->
-                            <div style=\"margin: 20px 0 24px; padding: 14px 18px; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px;\">
-                                <div style=\"font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px;\">
+                            <div style=\"margin: 20px 0 24px; padding: 14px 18px; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; font-family: {$fontFamily};\">
+                                <div style=\"font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; font-family: {$fontFamily};\">
                                     Ticket Reference Details
                                 </div>
-                                <table role=\"presentation\" width=\"100%\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\" style=\"font-size: 12px;\">
+                                <table role=\"presentation\" width=\"100%\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\" style=\"font-size: 12px; font-family: {$fontFamily};\">
                                     <tr>
-                                        <td style=\"padding: 3px 0; color: #64748b; width: 32%;\"><strong>Subject:</strong></td>
-                                        <td style=\"padding: 3px 0; color: #0f172a; font-weight: 700;\">{$subject}</td>
+                                        <td style=\"padding: 3px 0; color: #64748b; width: 32%; font-family: {$fontFamily};\"><strong>Subject:</strong></td>
+                                        <td style=\"padding: 3px 0; color: #0f172a; font-weight: 700; font-family: {$fontFamily};\">{$subject}</td>
                                     </tr>
                                     <tr>
-                                        <td style=\"padding: 3px 0; color: #64748b;\"><strong>Category / Role:</strong></td>
-                                        <td style=\"padding: 3px 0; color: #0f172a;\">{$reporterRole}</td>
+                                        <td style=\"padding: 3px 0; color: #64748b; font-family: {$fontFamily};\"><strong>Category / Role:</strong></td>
+                                        <td style=\"padding: 3px 0; color: #0f172a; font-family: {$fontFamily};\">{$reporterRole}</td>
                                     </tr>
                                     <tr>
-                                        <td style=\"padding: 3px 0; color: #64748b;\"><strong>Department:</strong></td>
-                                        <td style=\"padding: 3px 0; color: #0f172a;\">{$department}</td>
+                                        <td style=\"padding: 3px 0; color: #64748b; font-family: {$fontFamily};\"><strong>Department:</strong></td>
+                                        <td style=\"padding: 3px 0; color: #0f172a; font-family: {$fontFamily};\">{$department}</td>
                                     </tr>
                                     <tr>
-                                        <td style=\"padding: 3px 0; color: #64748b;\"><strong>Last Updated:</strong></td>
-                                        <td style=\"padding: 3px 0; color: #0f172a;\">{$dateTimeNow}</td>
+                                        <td style=\"padding: 3px 0; color: #64748b; font-family: {$fontFamily};\"><strong>Last Updated:</strong></td>
+                                        <td style=\"padding: 3px 0; color: #0f172a; font-family: {$fontFamily};\">{$dateTimeNow}</td>
                                     </tr>
                                 </table>
                             </div>
 
                             <!-- Call to Action Button -->
-                            <div style=\"text-align: center; margin: 26px 0 10px;\">
-                                <a href=\"{$portalUrl}\" target=\"_blank\" style=\"display: inline-block; padding: 12px 28px; font-size: 13px; font-weight: 800; color: #ffffff; background-color: #0f172a; border-radius: 12px; text-decoration: none; box-shadow: 0 4px 14px rgba(15, 23, 42, 0.25); letter-spacing: 0.3px;\">
+                            <div style=\"text-align: center; margin: 26px 0 10px; font-family: {$fontFamily};\">
+                                <a href=\"{$portalUrl}\" target=\"_blank\" style=\"display: inline-block; padding: 12px 28px; font-size: 13px; font-weight: 800; color: #ffffff; background-color: #0f172a; border-radius: 12px; text-decoration: none; box-shadow: 0 4px 14px rgba(15, 23, 42, 0.25); letter-spacing: 0.3px; font-family: {$fontFamily};\">
                                     Track Your Ticket Live in Portal &rarr;
                                 </a>
-                                <div style=\"font-size: 11px; color: #94a3b8; margin-top: 8px;\">
+                                <div style=\"font-size: 11px; color: #94a3b8; margin-top: 8px; font-family: {$fontFamily};\">
                                     Instant real-time triage updates &bull; Sign in via Google SSO
                                 </div>
                             </div>
@@ -531,14 +544,14 @@ function build_ticket_progress_email_html(
 
                     <!-- Footer -->
                     <tr>
-                        <td style=\"background-color: #f1f5f9; padding: 20px 28px; border-top: 1px solid #e2e8f0; font-size: 11px; color: #64748b; line-height: 1.5; text-align: center;\">
-                            <div style=\"font-weight: 700; color: #334155;\">
+                        <td style=\"background-color: #f1f5f9; padding: 20px 28px; border-top: 1px solid #e2e8f0; font-size: 11px; color: #64748b; line-height: 1.5; text-align: center; font-family: {$fontFamily};\">
+                            <div style=\"font-weight: 700; color: #334155; font-family: {$fontFamily};\">
                                 Southwestern University PHINMA &bull; Medical & Health Sciences IT Support
                             </div>
-                            <div style=\"margin-top: 4px;\">
+                            <div style=\"margin-top: 4px; font-family: {$fontFamily};\">
                                 Urgello St., Sambag II, Cebu City, Philippines 6000
                             </div>
-                            <div style=\"margin-top: 8px; font-size: 10px; color: #94a3b8;\">
+                            <div style=\"margin-top: 8px; font-size: 10px; color: #94a3b8; font-family: {$fontFamily};\">
                                 This is an automated operational notification generated upon ticket triage updates. Please do not reply directly to this mailer address.
                             </div>
                         </td>
