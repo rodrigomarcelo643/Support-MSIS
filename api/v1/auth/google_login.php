@@ -13,6 +13,12 @@
  */
 
 require_once __DIR__ . '/../connection.php';
+require_once __DIR__ . '/../tickets/helpers.php';
+
+// Ensure database tables exist for user roles and default Super Admin
+if (function_exists('ensure_users_table_exist')) {
+    ensure_users_table_exist($conn);
+}
 
 // Accept only POST requests
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -44,7 +50,40 @@ if (empty($email)) {
 $normalizedEmail = strtolower($email);
 
 /**
- * 1. Check `users` table (Admin only)
+ * 1. Check `it_support_ticket_user` table (Super Admin & IT Support / System Developers)
+ */
+$stmt = $conn->prepare("SELECT * FROM it_support_ticket_user WHERE LOWER(email) = ? LIMIT 1");
+if ($stmt) {
+    $stmt->bind_param("s", $normalizedEmail);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    if ($row = $result->fetch_assoc()) {
+        $role = !empty($row['role']) ? $row['role'] : 'Super Admin';
+        $defaultName = ($role === 'Super Admin') ? 'Rodrigo' : 'IT Administrator';
+        $name = $row['name'] ?? trim(($row['first_name'] ?? '') . ' ' . ($row['last_name'] ?? '')) ?: $googleName ?: $defaultName;
+        $defaultDept = ($role === 'Super Admin') ? 'MSIS Development & IT Systems' : 'MSIS Administration';
+        
+        $user = [
+            'id' => (string)($row['id'] ?? 'usr_it_' . uniqid()),
+            'email' => $row['email'],
+            'name' => $name,
+            'role' => $role,
+            'department' => $row['department'] ?? $defaultDept,
+            'avatar_url' => $avatarUrl ?: ($row['avatar_url'] ?? $row['profile_photo'] ?? null)
+        ];
+
+        echo json_encode([
+            'status' => 'success',
+            'message' => 'Authenticated successfully as ' . ($role === 'Super Admin' ? 'Super Admin' : 'Admin'),
+            'role' => $role,
+            'user' => $user
+        ]);
+        exit;
+    }
+}
+
+/**
+ * 1b. Check `users` table (Admin / General Users)
  */
 $stmt = $conn->prepare("SELECT * FROM users WHERE LOWER(email) = ? LIMIT 1");
 if ($stmt) {
@@ -53,25 +92,49 @@ if ($stmt) {
     $result = $stmt->get_result();
     if ($row = $result->fetch_assoc()) {
         $role = !empty($row['role']) ? $row['role'] : 'Admin';
-        $name = $row['name'] ?? trim(($row['first_name'] ?? '') . ' ' . ($row['last_name'] ?? '')) ?: $googleName ?: 'Administrator';
+        $defaultName = ($role === 'Super Admin') ? 'Rodrigo' : 'Administrator';
+        $name = $row['name'] ?? trim(($row['first_name'] ?? '') . ' ' . ($row['last_name'] ?? '')) ?: $googleName ?: $defaultName;
+        $defaultDept = ($role === 'Super Admin') ? 'MSIS Development & IT Systems' : 'MSIS Administration';
         
         $user = [
             'id' => (string)($row['id'] ?? 'usr_admin_' . uniqid()),
             'email' => $row['email'],
             'name' => $name,
             'role' => $role,
-            'department' => $row['department'] ?? 'MSIS Administration',
+            'department' => $row['department'] ?? $defaultDept,
             'avatar_url' => $avatarUrl ?: ($row['avatar_url'] ?? $row['profile_photo'] ?? null)
         ];
 
         echo json_encode([
             'status' => 'success',
-            'message' => 'Authenticated successfully as Admin',
+            'message' => 'Authenticated successfully as ' . ($role === 'Super Admin' ? 'Super Admin' : 'Admin'),
             'role' => $role,
             'user' => $user
         ]);
         exit;
     }
+}
+
+/**
+ * Fallback for developer Super Admin: medsis798@gmail.com
+ */
+if ($normalizedEmail === 'medsis798@gmail.com') {
+    $user = [
+        'id' => '1',
+        'email' => 'medsis798@gmail.com',
+        'name' => $googleName ?: 'Rodrigo',
+        'role' => 'Super Admin',
+        'department' => 'MSIS Development & IT Systems',
+        'avatar_url' => $avatarUrl ?: null
+    ];
+
+    echo json_encode([
+        'status' => 'success',
+        'message' => 'Authenticated successfully as Super Admin',
+        'role' => 'Super Admin',
+        'user' => $user
+    ]);
+    exit;
 }
 
 /**
