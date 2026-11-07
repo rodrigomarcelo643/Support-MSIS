@@ -5,28 +5,60 @@
  * Path: api/v1/tickets/mailer.php
  */
 
-// Load PHPMailer from the root folder
-$phpMailerRoot = dirname(__DIR__, 3) . '/PHPMailer/src';
-if (!file_exists($phpMailerRoot . '/PHPMailer.php')) {
-    // Fallback relative search paths
+// Safe dynamic PHPMailer loader: checks multiple paths and never throws fatal errors
+$phpMailerAvailable = false;
+
+if (class_exists('PHPMailer\PHPMailer\PHPMailer')) {
+    $phpMailerAvailable = true;
+} else {
     $docRoot = !empty($_SERVER['DOCUMENT_ROOT']) ? rtrim($_SERVER['DOCUMENT_ROOT'], '/\\') : null;
-    $possibleRoots = array_filter([
+    $possibleRoots = array_values(array_unique(array_filter([
+        dirname(__DIR__, 3) . '/PHPMailer/src',
+        dirname(__DIR__, 3) . '/PHPMailer',
         $docRoot ? $docRoot . '/PHPMailer/src' : null,
+        $docRoot ? $docRoot . '/PHPMailer' : null,
+        $docRoot ? dirname($docRoot) . '/PHPMailer/src' : null,
+        $docRoot ? dirname($docRoot) . '/PHPMailer' : null,
         dirname(__DIR__, 2) . '/PHPMailer/src',
-        __DIR__ . '/../../../PHPMailer/src',
-        __DIR__ . '/../../PHPMailer/src'
-    ]);
+        dirname(__DIR__, 2) . '/PHPMailer',
+        dirname(__DIR__, 1) . '/PHPMailer/src',
+        dirname(__DIR__, 1) . '/PHPMailer',
+        __DIR__ . '/PHPMailer/src',
+        __DIR__ . '/PHPMailer',
+    ])));
+
     foreach ($possibleRoots as $pr) {
-        if (file_exists($pr . '/PHPMailer.php')) {
-            $phpMailerRoot = $pr;
+        $exceptionFile = $pr . '/Exception.php';
+        $phpMailerFile = $pr . '/PHPMailer.php';
+        $smtpFile = $pr . '/SMTP.php';
+
+        if (file_exists($exceptionFile) && file_exists($phpMailerFile) && file_exists($smtpFile)) {
+            require_once $exceptionFile;
+            require_once $phpMailerFile;
+            require_once $smtpFile;
+            $phpMailerAvailable = true;
             break;
         }
     }
-}
 
-require_once $phpMailerRoot . '/Exception.php';
-require_once $phpMailerRoot . '/PHPMailer.php';
-require_once $phpMailerRoot . '/SMTP.php';
+    // Composer vendor autoload fallback
+    if (!$phpMailerAvailable) {
+        $autoloadPaths = array_values(array_unique(array_filter([
+            dirname(__DIR__, 3) . '/vendor/autoload.php',
+            $docRoot ? $docRoot . '/vendor/autoload.php' : null,
+            dirname(__DIR__, 2) . '/vendor/autoload.php',
+        ])));
+        foreach ($autoloadPaths as $ap) {
+            if (file_exists($ap)) {
+                require_once $ap;
+                if (class_exists('PHPMailer\PHPMailer\PHPMailer')) {
+                    $phpMailerAvailable = true;
+                    break;
+                }
+            }
+        }
+    }
+}
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
@@ -117,6 +149,20 @@ function get_msis_mailer_config(): array {
  * Dispatch email using the root PHPMailer library
  */
 function send_msis_phpmailer(string $toEmail, string $toName, string $subject, string $htmlBody, string $altBody, array $config): array {
+    if (!class_exists('PHPMailer\PHPMailer\PHPMailer')) {
+        return [
+            'sent' => false,
+            'reason' => 'PHPMailer library files not found on server.'
+        ];
+    }
+
+    if (empty($config['password']) || empty($config['username'])) {
+        return [
+            'sent' => false,
+            'reason' => 'SMTP mail credentials (username/password) are not configured in environment.'
+        ];
+    }
+
     $mail = new PHPMailer(true);
 
     try {
@@ -528,20 +574,27 @@ function send_ticket_progress_notification(
     ?string $supportMessage = null,
     array $adminInfo = []
 ): array {
-    $recipientEmail = trim($ticket['reporter_email'] ?? '');
-    $recipientName = trim($ticket['reporter_name'] ?? 'MSIS Colleague');
-    $ticketCode = $ticket['ticket_code'] ?? ('#' . ($ticket['id'] ?? 'TICKET'));
+    try {
+        $recipientEmail = trim((string)($ticket['reporter_email'] ?? ''));
+        $recipientName = trim((string)($ticket['reporter_name'] ?? 'MSIS Colleague'));
+        $ticketCode = $ticket['ticket_code'] ?? ('#' . ($ticket['id'] ?? 'TICKET'));
 
-    if (empty($recipientEmail) || !filter_var($recipientEmail, FILTER_VALIDATE_EMAIL)) {
+        if (empty($recipientEmail) || !filter_var($recipientEmail, FILTER_VALIDATE_EMAIL)) {
+            return [
+                'sent' => false,
+                'reason' => 'No valid recipient email address found on ticket record.'
+            ];
+        }
+
+        $config = get_msis_mailer_config();
+        $subject = "Ticket #{$ticketCode} Progress: [{$newStatus}] - " . ($ticket['subject'] ?? 'Technical Support');
+        $content = build_ticket_progress_email_html($ticket, $newStatus, $supportMessage, $adminInfo, $config);
+
+        return send_msis_phpmailer($recipientEmail, $recipientName, $subject, $content['html'], $content['plain'], $config);
+    } catch (Throwable $e) {
         return [
             'sent' => false,
-            'reason' => 'No valid recipient email address found on ticket record.'
+            'reason' => 'Progress notification exception: ' . $e->getMessage()
         ];
     }
-
-    $config = get_msis_mailer_config();
-    $subject = "Ticket #{$ticketCode} Progress: [{$newStatus}] - " . ($ticket['subject'] ?? 'Technical Support');
-    $content = build_ticket_progress_email_html($ticket, $newStatus, $supportMessage, $adminInfo, $config);
-
-    return send_msis_phpmailer($recipientEmail, $recipientName, $subject, $content['html'], $content['plain'], $config);
 }
