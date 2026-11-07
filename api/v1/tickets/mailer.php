@@ -617,3 +617,325 @@ function send_ticket_progress_notification(
         ];
     }
 }
+
+/**
+ * Build responsive HTML Email Alert for Super Admin / Support Personnel
+ */
+function build_super_admin_new_ticket_email_html(
+    array $ticket,
+    array $attachments,
+    array $config
+): array {
+    $ticketCode = htmlspecialchars($ticket['ticket_code'] ?? ('#' . ($ticket['id'] ?? 'TICKET')));
+    $subject = htmlspecialchars($ticket['subject'] ?? 'Untitled Technical Issue');
+    $description = htmlspecialchars($ticket['description'] ?? 'No detailed description provided.');
+    $reporterName = htmlspecialchars($ticket['reporter_name'] ?? 'MSIS User');
+    $reporterRole = htmlspecialchars($ticket['reporter_role'] ?? 'Reporter');
+    $reporterEmail = htmlspecialchars($ticket['reporter_email'] ?? 'unspecified@msis.edu');
+    $department = htmlspecialchars($ticket['department'] ?? 'General Systems');
+    $priority = htmlspecialchars($ticket['priority'] ?? 'Medium');
+
+    $fontFamily = "'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+    $dateTimeNow = date('F j, Y, g:i A') . ' PHT';
+
+    // Direct Super Admin triage deep link
+    $ticketParam = !empty($ticket['id']) ? rawurlencode((string)$ticket['id']) : '';
+    $adminPortalUrl = htmlspecialchars($config['base_url'] . '/super-admin/tickets');
+    if ($ticketParam) {
+        $adminPortalUrl = htmlspecialchars($config['base_url'] . '/admin/tickets/' . $ticketParam);
+    }
+
+    // Priority Styling
+    $priorityColor = '#0369a1';
+    $priorityBg = '#e0f2fe';
+    $priorityBorder = '#bae6fd';
+    if (strcasecmp($priority, 'Critical') === 0) {
+        $priorityColor = '#991b1b';
+        $priorityBg = '#fee2e2';
+        $priorityBorder = '#fecaca';
+    } elseif (strcasecmp($priority, 'High') === 0) {
+        $priorityColor = '#c2410c';
+        $priorityBg = '#ffedd5';
+        $priorityBorder = '#fed7aa';
+    } elseif (strcasecmp($priority, 'Low') === 0) {
+        $priorityColor = '#475569';
+        $priorityBg = '#f1f5f9';
+        $priorityBorder = '#e2e8f0';
+    }
+
+    // Attachments HTML
+    $attachmentsHtml = '';
+    if (!empty($attachments) && is_array($attachments)) {
+        $attItems = '';
+        foreach ($attachments as $att) {
+            $attName = htmlspecialchars($att['name'] ?? $att['original_name'] ?? 'Attached File');
+            $attUrl = !empty($att['url']) ? htmlspecialchars($att['url']) : null;
+            $attSize = !empty($att['size']) ? ' (' . round($att['size'] / 1024, 1) . ' KB)' : '';
+
+            if ($attUrl) {
+                $attItems .= "<li style=\"margin-bottom: 4px;\"><a href=\"{$attUrl}\" target=\"_blank\" style=\"color: #0284c7; text-decoration: underline; font-weight: 600;\">{$attName}</a><span style=\"color: #64748b; font-size: 11px;\">{$attSize}</span></li>";
+            } else {
+                $attItems .= "<li style=\"margin-bottom: 4px; color: #334155; font-weight: 600;\">{$attName}<span style=\"color: #64748b; font-size: 11px;\">{$attSize}</span></li>";
+            }
+        }
+
+        $attachmentsHtml = "
+        <div style=\"margin: 18px 0 20px; padding: 12px 16px; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; font-family: {$fontFamily};\">
+            <div style=\"font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px; font-family: {$fontFamily};\">
+                Attached Diagnostic Files (" . count($attachments) . ")
+            </div>
+            <ul style=\"margin: 0; padding-left: 18px; font-size: 12px; font-family: {$fontFamily};\">
+                {$attItems}
+            </ul>
+        </div>";
+    }
+
+    $descriptionFormatted = nl2br($description);
+
+    $html = "
+<!DOCTYPE html>
+<html lang=\"en\">
+<head>
+    <meta charset=\"UTF-8\">
+    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
+    <title>New Ticket Ingested: {$ticketCode}</title>
+    <!-- Plus Jakarta Sans Font (Matching MSIS Project Typography) -->
+    <link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">
+    <link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin>
+    <link href=\"https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap\" rel=\"stylesheet\">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');
+        body, table, td, div, span, p, a, strong, b {
+            font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+        }
+    </style>
+</head>
+<body style=\"margin: 0; padding: 0; background-color: #f8fafc; font-family: {$fontFamily}; color: #0f172a; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;\">
+    <table role=\"presentation\" width=\"100%\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\" style=\"background-color: #f8fafc; padding: 24px 12px; font-family: {$fontFamily};\">
+        <tr>
+            <td align=\"center\">
+                <table role=\"presentation\" width=\"100%\" max-width=\"620\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\" style=\"max-width: 620px; background-color: #ffffff; border-radius: 20px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05); text-align: left; font-family: {$fontFamily};\">
+                    
+                    <!-- Header Banner -->
+                    <tr>
+                        <td style=\"background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 50%, #dc2626 100%); padding: 24px 28px; text-align: left; font-family: {$fontFamily};\">
+                            <table role=\"presentation\" width=\"100%\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\" style=\"font-family: {$fontFamily};\">
+                                <tr>
+                                    <td>
+                                        <div style=\"font-size: 10px; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase; color: #fecaca; margin-bottom: 4px; font-family: {$fontFamily};\">
+                                            Super Admin Triage Alert &bull; Southwestern University PHINMA
+                                        </div>
+                                        <div style=\"font-size: 20px; font-weight: 900; color: #ffffff; letter-spacing: -0.3px; line-height: 1.2; font-family: {$fontFamily};\">
+                                            New Support Ticket Ingested
+                                        </div>
+                                        <div style=\"font-size: 11px; color: #fee2e2; margin-top: 4px; font-weight: 500; font-family: {$fontFamily};\">
+                                            Medical Student Information System (MSIS) &bull; Immediate Attention Required
+                                        </div>
+                                    </td>
+                                    <td align=\"right\" style=\"vertical-align: top;\">
+                                        <span style=\"display: inline-block; padding: 5px 12px; font-size: 12px; font-weight: 800; color: #ffffff; background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 12px; font-family: monospace;\">
+                                            {$ticketCode}
+                                        </span>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- Body Content -->
+                    <tr>
+                        <td style=\"padding: 28px 28px 24px; font-family: {$fontFamily};\">
+                            <!-- Alert Callout -->
+                            <div style=\"padding: 14px 18px; background-color: #fef2f2; border: 1px solid #fecaca; border-radius: 14px; margin-bottom: 20px; font-family: {$fontFamily};\">
+                                <div style=\"font-size: 13px; color: #991b1b; line-height: 1.5; font-weight: 600; font-family: {$fontFamily};\">
+                                    &#9888; A new technical support incident was submitted by <strong style=\"color: #7f1d1d;\">{$reporterName}</strong> ({$reporterRole}) and has been registered in the triage queue.
+                                </div>
+                            </div>
+
+                            <!-- Highlights Grid -->
+                            <div style=\"margin: 18px 0 20px; padding: 16px 18px; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; font-family: {$fontFamily};\">
+                                <table role=\"presentation\" width=\"100%\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\" style=\"font-family: {$fontFamily};\">
+                                    <tr>
+                                        <td>
+                                            <div style=\"font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.8px; font-family: {$fontFamily};\">
+                                                Subject / Issue Title
+                                            </div>
+                                            <div style=\"font-size: 17px; font-weight: 900; color: #0f172a; margin-top: 3px; font-family: {$fontFamily};\">
+                                                {$subject}
+                                            </div>
+                                            <div style=\"font-size: 11px; font-weight: 600; color: #64748b; margin-top: 3px; font-family: {$fontFamily};\">
+                                                Department: {$department} &bull; {$dateTimeNow}
+                                            </div>
+                                        </td>
+                                        <td align=\"right\" style=\"vertical-align: middle;\">
+                                            <span style=\"display: inline-block; padding: 6px 14px; font-size: 11px; font-weight: 800; color: {$priorityColor}; background-color: {$priorityBg}; border: 1px solid {$priorityBorder}; border-radius: 999px; text-transform: uppercase; letter-spacing: 0.5px; font-family: {$fontFamily};\">
+                                                Priority: {$priority}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+
+                            <!-- Reporter Information Card -->
+                            <div style=\"margin: 18px 0 20px; padding: 14px 18px; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; font-family: {$fontFamily};\">
+                                <div style=\"font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; font-family: {$fontFamily};\">
+                                    Reporter Identification Details
+                                </div>
+                                <table role=\"presentation\" width=\"100%\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\" style=\"font-size: 12px; font-family: {$fontFamily};\">
+                                    <tr>
+                                        <td style=\"padding: 3px 0; color: #64748b; width: 32%; font-family: {$fontFamily};\"><strong>Full Name:</strong></td>
+                                        <td style=\"padding: 3px 0; color: #0f172a; font-weight: 700; font-family: {$fontFamily};\">{$reporterName}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style=\"padding: 3px 0; color: #64748b; font-family: {$fontFamily};\"><strong>Institutional Email:</strong></td>
+                                        <td style=\"padding: 3px 0; color: #0284c7; font-weight: 600; font-family: {$fontFamily};\"><a href=\"mailto:{$reporterEmail}\" style=\"color: #0284c7; text-decoration: none;\">{$reporterEmail}</a></td>
+                                    </tr>
+                                    <tr>
+                                        <td style=\"padding: 3px 0; color: #64748b; font-family: {$fontFamily};\"><strong>Institutional Role:</strong></td>
+                                        <td style=\"padding: 3px 0; color: #0f172a; font-family: {$fontFamily};\">{$reporterRole}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style=\"padding: 3px 0; color: #64748b; font-family: {$fontFamily};\"><strong>Department / Unit:</strong></td>
+                                        <td style=\"padding: 3px 0; color: #0f172a; font-family: {$fontFamily};\">{$department}</td>
+                                    </tr>
+                                </table>
+                            </div>
+
+                            <!-- Description Block -->
+                            <div style=\"margin: 20px 0; font-family: {$fontFamily};\">
+                                <div style=\"font-size: 11px; font-weight: 800; color: #0f172a; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; font-family: {$fontFamily};\">
+                                    Issue Description & Telemetry Notes
+                                </div>
+                                <div style=\"background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px 16px; font-size: 13px; color: #334155; line-height: 1.6; white-space: normal; font-family: {$fontFamily};\">
+                                    {$descriptionFormatted}
+                                </div>
+                            </div>
+
+                            {$attachmentsHtml}
+
+                            <!-- Call to Action Button -->
+                            <div style=\"text-align: center; margin: 28px 0 10px; font-family: {$fontFamily};\">
+                                <a href=\"{$adminPortalUrl}\" target=\"_blank\" style=\"display: inline-block; padding: 13px 30px; font-size: 13px; font-weight: 800; color: #ffffff; background-color: #991b1b; border-radius: 12px; text-decoration: none; box-shadow: 0 4px 14px rgba(153, 27, 27, 0.3); letter-spacing: 0.3px; font-family: {$fontFamily};\">
+                                    Open Ticket in Super Admin Console &rarr;
+                                </a>
+                                <div style=\"font-size: 11px; color: #94a3b8; margin-top: 8px; font-family: {$fontFamily};\">
+                                    Direct access to triage status updater, audit trail & technician assigner
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td style=\"background-color: #f1f5f9; padding: 20px 28px; border-top: 1px solid #e2e8f0; font-size: 11px; color: #64748b; line-height: 1.5; text-align: center; font-family: {$fontFamily};\">
+                            <div style=\"font-weight: 700; color: #334155; font-family: {$fontFamily};\">
+                                Southwestern University PHINMA &bull; Medical Student Information System (MSIS)
+                            </div>
+                            <div style=\"margin-top: 4px; font-family: {$fontFamily};\">
+                                Technical Administration & Engineering &bull; Urgello St., Sambag II, Cebu City, Philippines 6000
+                            </div>
+                            <div style=\"margin-top: 8px; font-size: 10px; color: #94a3b8; font-family: {$fontFamily};\">
+                                This is an automated internal operational alert dispatched to system administrators.
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>";
+
+    $plainText = "[MSIS SUPPORT ALERT] New Ticket Ingested: #{$ticketCode}\n\n"
+        . "A new support ticket has been filed and requires triage.\n\n"
+        . "Ticket: #{$ticketCode}\n"
+        . "Priority: {$priority}\n"
+        . "Subject: {$subject}\n"
+        . "Department: {$department}\n"
+        . "Reporter: {$reporterName} ({$reporterRole})\n"
+        . "Email: {$reporterEmail}\n"
+        . "Submitted At: {$dateTimeNow}\n\n"
+        . "Description:\n{$description}\n\n"
+        . "View in Admin Console: {$adminPortalUrl}\n\n"
+        . "Southwestern University PHINMA - MSIS Technical Administration";
+
+    return [
+        'html' => $html,
+        'plain' => $plainText
+    ];
+}
+
+/**
+ * Public trigger to dispatch email alert to Super Admin / Support Personnel
+ */
+function send_super_admin_new_ticket_alert(
+    array $ticket,
+    array $attachments = [],
+    ?mysqli $conn = null
+): array {
+    try {
+        $config = get_msis_mailer_config();
+        $ticketCode = $ticket['ticket_code'] ?? ('#' . ($ticket['id'] ?? 'TICKET'));
+        $rawSubject = trim((string)($ticket['subject'] ?? 'Technical Support Request'));
+
+        // Query active Super Admins from database
+        $adminRecipients = [];
+        if ($conn instanceof mysqli) {
+            $adminRes = @$conn->query("
+                SELECT `name`, `email` 
+                FROM `it_support_ticket_user` 
+                WHERE `role` = 'Super Admin' AND `status` = 'active'
+            ");
+            if ($adminRes && $adminRes->num_rows > 0) {
+                while ($adminRow = $adminRes->fetch_assoc()) {
+                    $em = trim((string)($adminRow['email'] ?? ''));
+                    if (filter_var($em, FILTER_VALIDATE_EMAIL)) {
+                        $adminRecipients[$em] = trim((string)($adminRow['name'] ?? 'Super Admin')) ?: 'Super Admin';
+                    }
+                }
+            }
+        }
+
+        // Environment / default Super Admin fallback
+        if (empty($adminRecipients)) {
+            $supportEmail = $config['username'] ?: 'medsis798@gmail.com';
+            if (filter_var($supportEmail, FILTER_VALIDATE_EMAIL)) {
+                $adminRecipients[$supportEmail] = 'MSIS Super Admin';
+            }
+        }
+
+        if (empty($adminRecipients)) {
+            return [
+                'sent' => false,
+                'reason' => 'No valid Super Admin email address discovered.'
+            ];
+        }
+
+        $emailSubject = "[MSIS Support Alert] New Ticket #{$ticketCode}: {$rawSubject}";
+        $content = build_super_admin_new_ticket_email_html($ticket, $attachments, $config);
+
+        $sentCount = 0;
+        $errors = [];
+
+        foreach ($adminRecipients as $admEmail => $admName) {
+            $res = send_msis_phpmailer($admEmail, $admName, $emailSubject, $content['html'], $content['plain'], $config);
+            if (!empty($res['sent'])) {
+                $sentCount++;
+            } else {
+                $errors[] = $res['error'] ?? $res['reason'] ?? "Failed sending to {$admEmail}";
+            }
+        }
+
+        return [
+            'sent' => $sentCount > 0,
+            'recipients' => array_keys($adminRecipients),
+            'sent_count' => $sentCount,
+            'errors' => $errors
+        ];
+    } catch (Throwable $e) {
+        return [
+            'sent' => false,
+            'reason' => 'Super admin alert exception: ' . $e->getMessage()
+        ];
+    }
+}
