@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS `tickets` (
   `description` TEXT NOT NULL COMMENT 'Detailed reproduction steps, errors, and context',
   
   -- Status & Triage Management (Only Super Admin can mutate status & reply)
-  `status` ENUM('In Progress', 'Investigating', 'Resolved', 'Dispatched') NOT NULL DEFAULT 'In Progress',
+  `status` ENUM('In Progress', 'Investigating', 'Dispatched', 'Resolved', 'Closed') NOT NULL DEFAULT 'In Progress',
   `priority` ENUM('Low', 'Medium', 'High', 'Critical') NOT NULL DEFAULT 'Medium',
   `assigned_technician_id` VARCHAR(64) DEFAULT NULL,
   `assigned_technician_name` VARCHAR(150) DEFAULT NULL,
