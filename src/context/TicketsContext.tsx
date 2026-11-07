@@ -119,32 +119,55 @@ export const TicketsProvider: React.FC<{ children: React.ReactNode }> = ({ child
             return prev;
           }
 
-          // If changes occurred and not triggered by our own recent action, alert the user
+          // If changes occurred and not triggered by our own recent action, alert the relevant user
           const isOurOwnAction = Date.now() - lastLocalMutationTime.current < 2500;
           if (notifyOnChanges && !isOurOurAction(isOurOwnAction) && prev.length > 0) {
             const prevIds = new Set(prev.map((t) => t.id));
             const newTickets = remoteTickets.filter((t) => !prevIds.has(t.id));
 
+            const currentUserEmail = user?.email?.trim().toLowerCase();
+            const currentUserId = user?.id?.trim();
+            const isSuperAdmin = user?.role === 'Super Admin';
+            const isAdmin = user?.role === 'Admin' || isSuperAdmin;
+
             if (newTickets.length > 0) {
-              const newest = newTickets[0];
-              showToast({
-                category: 'submission',
-                title: 'New Ticket Ingested',
-                message: `Ticket #${newest.id} from ${newest.reporterName || newest.category} arrived.`,
-                duration: 4000,
-              });
+              // Only alert admins/triage officers for new inbound tickets; regular users do not see others' filings
+              if (isAdmin) {
+                const newest = newTickets[0];
+                showToast({
+                  category: 'submission',
+                  title: 'New Ticket Ingested',
+                  message: `Ticket #${newest.id} from ${newest.reporterName || newest.category} arrived.`,
+                  duration: 4000,
+                });
+              }
             } else {
               const prevMap = new Map(prev.map((t) => [t.id, t]));
+              
+              // Only display status update toast to the user who owns the ticket (or Super Admin)
               for (const rt of remoteTickets) {
                 const pt = prevMap.get(rt.id);
                 if (pt && pt.status !== rt.status) {
-                  showToast({
-                    category: 'update',
-                    title: `Ticket #${rt.id} Status Updated`,
-                    message: `Status advanced from "${pt.status}" to "${rt.status}".`,
-                    duration: 4000,
-                  });
-                  break;
+                  const ticketReporterEmail = rt.reporterEmail?.trim().toLowerCase();
+                  const ticketReporterId = (rt as any).reporterId ? String((rt as any).reporterId).trim() : null;
+                  
+                  const isOwner = Boolean(
+                    (currentUserEmail && ticketReporterEmail && currentUserEmail === ticketReporterEmail) ||
+                    (currentUserId && ticketReporterId && currentUserId === ticketReporterId)
+                  );
+
+                  // Do not show update toast to other users: only show for that specific user or Super Admin
+                  if (isOwner || isSuperAdmin) {
+                    showToast({
+                      category: 'update',
+                      title: isOwner ? `Your Ticket #${rt.id} Updated` : `Ticket #${rt.id} Status Updated`,
+                      message: isOwner
+                        ? `Your ticket status advanced from "${pt.status}" to "${rt.status}".`
+                        : `Status for ${rt.reporterName || rt.category} advanced from "${pt.status}" to "${rt.status}".`,
+                      duration: 4000,
+                    });
+                    break;
+                  }
                 }
               }
             }
@@ -159,7 +182,7 @@ export const TicketsProvider: React.FC<{ children: React.ReactNode }> = ({ child
     } finally {
       setIsLiveSyncing(false);
     }
-  }, [showToast]);
+  }, [showToast, user?.email, user?.id, user?.role]);
 
   function isOurOurAction(val: boolean): boolean {
     return val;
