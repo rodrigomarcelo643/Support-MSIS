@@ -341,7 +341,53 @@ try {
     ];
 }
 
-// 7. Return Clean JSON Response
+// 7. Dispatch Alert Email to Super Admin / Support Personnel (fail-safe)
+$adminNotification = ['sent' => false, 'reason' => 'Admin mailer not dispatched'];
+try {
+    if (function_exists('send_super_admin_new_ticket_alert')) {
+        $adminNotification = send_super_admin_new_ticket_alert(
+            [
+                'id' => $ticketId,
+                'ticket_code' => $ticketCode,
+                'subject' => $subject,
+                'description' => $description,
+                'department' => $department,
+                'reporter_role' => $reporterRole,
+                'reporter_name' => $reporterName,
+                'reporter_email' => $reporterEmail,
+                'priority' => $priority,
+            ],
+            $savedAttachments,
+            $conn
+        );
+    }
+} catch (Throwable $adminMailEx) {
+    $adminNotification = [
+        'sent' => false,
+        'reason' => 'Admin alert notification error: ' . $adminMailEx->getMessage()
+    ];
+}
+
+// Log Super Admin alert result in ticket audit logs
+if (isset($adminNotification['sent'])) {
+    $adminAuditAction = $adminNotification['sent'] ? 'SUPER_ADMIN_ALERT_SENT' : 'SUPER_ADMIN_ALERT_FAILED';
+    $adminAuditNotes = $adminNotification['sent']
+        ? 'New ticket intake alert dispatched to Super Admin (' . implode(', ', $adminNotification['recipients'] ?? []) . ').'
+        : 'Failed to dispatch alert to Super Admin: ' . ($adminNotification['reason'] ?? 'Unknown');
+    $adminAuditStmt = $conn->prepare("
+        INSERT INTO ticket_audit_logs (
+            ticket_id, action, performed_by_id, performed_by_email, performed_by_role, notes, ip_address, created_at
+        ) VALUES (
+            ?, ?, 'sys_mailer', 'support@swu-som.com', 'System Mailer', ?, ?, NOW()
+        )
+    ");
+    if ($adminAuditStmt) {
+        $adminAuditStmt->bind_param("isss", $ticketId, $adminAuditAction, $adminAuditNotes, $clientIp);
+        $adminAuditStmt->execute();
+    }
+}
+
+// 8. Return Clean JSON Response
 $formattedTicket = [
     'id' => $ticketCode,
     'numericId' => $ticketId,
@@ -366,5 +412,6 @@ echo json_encode([
     'status' => 'success',
     'message' => 'Ticket filed successfully.',
     'ticket' => $formattedTicket,
-    'email_notification' => $emailNotification
+    'email_notification' => $emailNotification,
+    'admin_notification' => $adminNotification
 ]);
