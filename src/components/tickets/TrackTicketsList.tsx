@@ -17,7 +17,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Trash2,
-  AlertTriangle
+  AlertTriangle,
+  CheckCircle
 } from 'lucide-react';
 
 interface TrackTicketsListProps {
@@ -32,10 +33,18 @@ export const TrackTicketsList: React.FC<TrackTicketsListProps> = ({ currentRole,
   const [ticketSearch, setTicketSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'All' | SupportTicket['status']>('All');
   const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
+  const [modalStatus, setModalStatus] = useState<SupportTicket['status']>('In Progress');
   const [ticketToDelete, setTicketToDelete] = useState<SupportTicket | null>(null);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [rowsPerPage, setRowsPerPage] = useState<number>(10);
   const [adminReplyText, setAdminReplyText] = useState<string>('');
+  const [isSaving, setIsSaving] = useState<boolean>(false);
+
+  const handleOpenTicket = (ticket: SupportTicket) => {
+    setSelectedTicket(ticket);
+    setModalStatus(ticket.status);
+    setAdminReplyText(ticket.supportMessage || '');
+  };
 
   const isSuperAdmin = currentRole === 'Super Admin';
 
@@ -228,10 +237,7 @@ export const TrackTicketsList: React.FC<TrackTicketsListProps> = ({ currentRole,
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             type="button"
-                            onClick={() => {
-                              setSelectedTicket(t);
-                              setAdminReplyText(t.supportMessage || '');
-                            }}
+                            onClick={() => handleOpenTicket(t)}
                             className="px-2.5 py-1 text-xs font-semibold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer"
                           >
                             Details
@@ -431,20 +437,18 @@ export const TrackTicketsList: React.FC<TrackTicketsListProps> = ({ currentRole,
                     {/* ONLY Super Admin can change status; regular users see a badge */}
                     {isSuperAdmin ? (
                       <select
-                        value={selectedTicket.status}
+                        value={modalStatus}
                         onChange={(e) => {
-                          const newStatus = e.target.value as SupportTicket['status'];
-                          updateTicketStatus(selectedTicket.id, newStatus, adminReplyText);
-                          setSelectedTicket({ ...selectedTicket, status: newStatus });
+                          setModalStatus(e.target.value as SupportTicket['status']);
                         }}
-                        className={`text-xs font-bold py-1 px-2.5 rounded-lg border outline-none cursor-pointer shadow-2xs ${
-                          selectedTicket.status === 'Resolved'
-                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                            : selectedTicket.status === 'In Progress'
-                            ? 'bg-amber-50 text-amber-700 border-amber-200'
-                            : selectedTicket.status === 'Investigating'
-                            ? 'bg-sky-50 text-sky-700 border-sky-200'
-                            : 'bg-purple-50 text-purple-700 border-purple-200'
+                        className={`text-xs font-bold py-1.5 px-3 rounded-xl border outline-none cursor-pointer shadow-2xs transition-colors ${
+                          modalStatus === 'Resolved'
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
+                            : modalStatus === 'In Progress'
+                            ? 'bg-amber-50 text-amber-700 border-amber-300'
+                            : modalStatus === 'Investigating'
+                            ? 'bg-sky-50 text-sky-700 border-sky-300'
+                            : 'bg-purple-50 text-purple-700 border-purple-300'
                         }`}
                         title="Super Admin: Update ticket status"
                       >
@@ -550,45 +554,29 @@ export const TrackTicketsList: React.FC<TrackTicketsListProps> = ({ currentRole,
                   <button
                     type="button"
                     onClick={() => setSelectedTicket(null)}
-                    className="px-3.5 sm:px-4 py-2 rounded-xl text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 cursor-pointer whitespace-nowrap shadow-2xs"
+                    className="px-3.5 sm:px-4 py-2 rounded-xl text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 cursor-pointer whitespace-nowrap shadow-2xs transition-colors"
                   >
-                    Close
+                    Cancel
                   </button>
 
-                  {/* Super Admin can Save or Mark as Resolved */}
+                  {/* Super Admin Unified Save & Update Button */}
                   {isSuperAdmin && (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          updateTicketStatus(selectedTicket.id, selectedTicket.status, adminReplyText);
-                          setSelectedTicket({
-                            ...selectedTicket,
-                            supportMessage: adminReplyText,
-                          });
-                        }}
-                        className="px-3.5 sm:px-4 py-2 rounded-xl text-xs font-semibold bg-slate-900 text-white hover:bg-slate-800 cursor-pointer whitespace-nowrap shadow-xs"
-                      >
-                        Save Message
-                      </button>
-
-                      {selectedTicket.status !== 'Resolved' && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            updateTicketStatus(selectedTicket.id, 'Resolved', adminReplyText);
-                            setSelectedTicket({
-                              ...selectedTicket,
-                              status: 'Resolved',
-                              supportMessage: adminReplyText,
-                            });
-                          }}
-                          className="px-3.5 sm:px-4 py-2 rounded-xl text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 cursor-pointer whitespace-nowrap shadow-xs"
-                        >
-                          Mark as Resolved
-                        </button>
-                      )}
-                    </>
+                    <button
+                      type="button"
+                      disabled={isSaving}
+                      onClick={async () => {
+                        setIsSaving(true);
+                        await Promise.resolve(
+                          updateTicketStatus(selectedTicket.id, modalStatus, adminReplyText.trim())
+                        );
+                        setIsSaving(false);
+                        setSelectedTicket(null);
+                      }}
+                      className="px-4 sm:px-5 py-2 rounded-xl text-xs font-bold bg-red-600 hover:bg-red-700 text-white cursor-pointer whitespace-nowrap shadow-xs transition-all flex items-center gap-1.5 disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                      <CheckCircle className="h-3.5 w-3.5" />
+                      <span>{isSaving ? 'Updating...' : 'Save & Update Ticket'}</span>
+                    </button>
                   )}
                 </div>
               </div>
