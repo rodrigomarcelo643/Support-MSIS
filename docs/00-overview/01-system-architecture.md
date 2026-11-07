@@ -1,7 +1,7 @@
 # 01 • System Architecture
 
 ## 1. Overview & Purpose
-**MSIS Support** is a mission-critical web application designed for the **Medical Systems & Information Services (MSIS)** department of **Southwestern University PHINMA • School of Medicine**. It provides centralized, role-attributed defect reporting, system diagnostic capture, real-time ticket triage, and operational transparency across all institutional stakeholders.
+**MSIS Support** is a mission-critical web application designed for the **Medical Student Information System (MSIS)** of **Southwestern University PHINMA • School of Medicine**. It provides centralized, role-attributed defect reporting, system diagnostic capture, real-time ticket triage, and operational transparency across all institutional stakeholders.
 
 ---
 
