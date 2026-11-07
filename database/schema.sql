@@ -1,6 +1,6 @@
 -- ==============================================================================
 -- MSIS Support • Database Schema
--- Medical Systems & Information Services (MSIS)
+-- Medical Student Information System (MSIS)
 -- Southwestern University PHINMA • School of Medicine
 -- ==============================================================================
 -- Character Set: utf8mb4 (Supports complete Unicode, international names & emojis)
