@@ -17,7 +17,7 @@ export interface SupportTicket {
   department: string;
   subject: string;
   description: string;
-  status: 'In Progress' | 'Investigating' | 'Resolved' | 'Dispatched';
+  status: 'In Progress' | 'Investigating' | 'Dispatched' | 'Resolved' | 'Closed';
   attachmentsCount: number;
   attachments?: TicketAttachment[];
   submittedAt: string;
@@ -26,6 +26,8 @@ export interface SupportTicket {
   supportMessage?: string;
   supportRespondedByName?: string;
   supportRespondedAt?: string;
+  supportRespondedRelative?: string;
   createdAt?: string;
   updatedAt?: string;
+  updatedRelative?: string;
 }
