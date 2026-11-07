@@ -1,6 +1,6 @@
 -- ==============================================================================
 -- MSIS Support • Default Super Admin Seed Script
--- Medical Systems & Information Services (MSIS)
+-- Medical Student Information System (MSIS)
 -- Southwestern University PHINMA • School of Medicine
 -- ==============================================================================
 -- Table: it_support_ticket_user
