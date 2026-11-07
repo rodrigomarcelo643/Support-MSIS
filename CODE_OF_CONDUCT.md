@@ -1,13 +1,13 @@
 # Institutional Code of Conduct
 
-## Medical Systems & Information Services (MSIS)
+## Medical Student Information System (MSIS)
 ### Southwestern University PHINMA • School of Medicine
 
 ---
 
 ## 🏛️ Our Pledge
 
-The **Medical Systems & Information Services (MSIS)** at **Southwestern University PHINMA School of Medicine** is dedicated to fostering a secure, respectful, inclusive, and professional environment for all community members—including medical students, faculty members, clinicians, department secretaries, administrative staff, and IT personnel.
+The **Medical Student Information System (MSIS)** at **Southwestern University PHINMA School of Medicine** is dedicated to fostering a secure, respectful, inclusive, and professional environment for all community members—including medical students, faculty members, clinicians, department secretaries, administrative staff, and IT personnel.
 
 We pledge that everyone who participates in, contributes to, or utilizes the MSIS Support Ticket System and its associated repositories will experience an environment free from discrimination, harassment, and unauthorized disclosure of confidential academic or clinical data.
 
