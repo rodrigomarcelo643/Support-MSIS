@@ -56,7 +56,7 @@ function ensure_ticket_tables_exist(mysqli $conn): void {
           `department` VARCHAR(120) DEFAULT 'General',
           `subject` VARCHAR(255) NOT NULL,
           `description` TEXT NOT NULL,
-          `status` ENUM('In Progress', 'Investigating', 'Resolved', 'Dispatched') NOT NULL DEFAULT 'In Progress',
+          `status` ENUM('In Progress', 'Investigating', 'Dispatched', 'Resolved', 'Closed') NOT NULL DEFAULT 'In Progress',
           `priority` ENUM('Low', 'Medium', 'High', 'Critical') NOT NULL DEFAULT 'Medium',
           `assigned_technician_id` VARCHAR(64) DEFAULT NULL,
           `assigned_technician_name` VARCHAR(150) DEFAULT NULL,
@@ -221,11 +221,13 @@ function format_ticket_record(array $row, array $attachments = []): array {
         'submittedAt' => format_relative_time($row['created_at']),
         'createdAt' => $row['created_at'],
         'updatedAt' => $row['updated_at'] ?? $row['created_at'],
+        'updatedRelative' => format_relative_time($row['updated_at'] ?? $row['created_at']),
         'reporterId' => $row['reporter_id'],
         'reporterName' => $row['reporter_name'],
         'reporterEmail' => $row['reporter_email'],
         'supportMessage' => $row['support_message'] ?? null,
         'supportRespondedByName' => $row['support_responded_by_name'] ?? null,
         'supportRespondedAt' => $row['support_responded_at'] ?? null,
+        'supportRespondedRelative' => !empty($row['support_responded_at']) ? format_relative_time($row['support_responded_at']) : null,
     ];
 }
