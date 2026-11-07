@@ -10,6 +10,8 @@ lerna-debug.log*
 # environments
 .env
 
+#databases
+
 node_modules
 dist
 dist-ssr
