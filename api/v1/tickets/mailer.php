@@ -600,7 +600,13 @@ function send_ticket_progress_notification(
         }
 
         $config = get_msis_mailer_config();
-        $subject = "Ticket #{$ticketCode} Progress: [{$newStatus}] - " . ($ticket['subject'] ?? 'Technical Support');
+
+        $rawSubject = trim((string)($ticket['subject'] ?? ''));
+        // Strip test placeholders or generic tags so production emails remain clean
+        $isTestOrGeneric = empty($rawSubject) || preg_match('/^(test|testing|new test|sample|test ticket|technical support)$/i', $rawSubject);
+        $subject = $isTestOrGeneric
+            ? "Ticket #{$ticketCode} Progress: [{$newStatus}]"
+            : "Ticket #{$ticketCode} Progress: [{$newStatus}] - {$rawSubject}";
         $content = build_ticket_progress_email_html($ticket, $newStatus, $supportMessage, $adminInfo, $config);
 
         return send_msis_phpmailer($recipientEmail, $recipientName, $subject, $content['html'], $content['plain'], $config);
