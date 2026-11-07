@@ -7,6 +7,7 @@ import { Button } from '../ui/button';
 import { useTickets } from '../../context/TicketsContext';
 import { TrackTicketsSkeleton, usePageSkeleton } from '../ui/skeleton';
 import { TicketAttachmentViewer } from './TicketAttachmentViewer';
+import { formatRelativeTime, formatBadgeCount } from '../../lib/utils';
 import {
   Ticket,
   PlusCircle,
@@ -18,7 +19,10 @@ import {
   ChevronRight,
   Trash2,
   AlertTriangle,
-  CheckCircle
+  CheckCircle,
+  Clock,
+  Radio,
+  ExternalLink
 } from 'lucide-react';
 
 interface TrackTicketsListProps {
@@ -46,13 +50,67 @@ export const TrackTicketsList: React.FC<TrackTicketsListProps> = ({ currentRole,
     setAdminReplyText(ticket.supportMessage || '');
   };
 
+  const getStatusBadge = (status: SupportTicket['status']) => {
+    switch (status) {
+      case 'Resolved':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold border shadow-2xs whitespace-nowrap bg-emerald-50 text-emerald-700 border-emerald-200/80">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+            <span>Resolved</span>
+          </span>
+        );
+      case 'In Progress':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold border shadow-2xs whitespace-nowrap bg-amber-50 text-amber-700 border-amber-200/80">
+            <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+            <span>In Progress</span>
+          </span>
+        );
+      case 'Investigating':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold border shadow-2xs whitespace-nowrap bg-sky-50 text-sky-700 border-sky-200/80">
+            <span className="h-1.5 w-1.5 rounded-full bg-sky-500 animate-pulse" />
+            <span>Investigating</span>
+          </span>
+        );
+      case 'Dispatched':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold border shadow-2xs whitespace-nowrap bg-purple-50 text-purple-700 border-purple-200/80">
+            <span className="h-1.5 w-1.5 rounded-full bg-purple-500" />
+            <span>Dispatched</span>
+          </span>
+        );
+      case 'Closed':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold border shadow-2xs whitespace-nowrap bg-slate-100 text-slate-700 border-slate-300">
+            <span className="h-1.5 w-1.5 rounded-full bg-slate-500" />
+            <span>Closed</span>
+          </span>
+        );
+    }
+  };
+
   const isSuperAdmin = currentRole === 'Super Admin';
+  const roleTickets = getTicketsForRole(currentRole);
+
+  // Synchronize modal ticket details in real time if open (MUST run before any conditional return)
+  React.useEffect(() => {
+    if (!selectedTicket) return;
+    const match = roleTickets.find((t) => t.id === selectedTicket.id);
+    if (
+      match &&
+      (match.status !== selectedTicket.status ||
+        match.supportMessage !== selectedTicket.supportMessage ||
+        match.updatedAt !== selectedTicket.updatedAt)
+    ) {
+      setSelectedTicket(match);
+      setModalStatus(match.status);
+    }
+  }, [roleTickets, selectedTicket]);
 
   if (isLoading) {
     return <TrackTicketsSkeleton />;
   }
-
-  const roleTickets = getTicketsForRole(currentRole);
 
   const filteredTickets = roleTickets.filter((t) => {
     const matchesSearch =
@@ -82,7 +140,11 @@ export const TrackTicketsList: React.FC<TrackTicketsListProps> = ({ currentRole,
             <Ticket className="h-4 w-4 sm:h-5 sm:w-5 text-red-600 shrink-0" />
             <span className="whitespace-nowrap">Track My Tickets</span>
             <span className="text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-full bg-red-50 text-red-700 whitespace-nowrap">
-              {roleTickets.length} Filed
+              {formatBadgeCount(roleTickets.length)} Filed
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/80 text-[10px] font-semibold whitespace-nowrap">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span>Live Sync</span>
             </span>
           </h1>
           <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5">
@@ -135,8 +197,9 @@ export const TrackTicketsList: React.FC<TrackTicketsListProps> = ({ currentRole,
             <option value="All">All Statuses ({roleTickets.length})</option>
             <option value="In Progress">In Progress</option>
             <option value="Investigating">Investigating</option>
-            <option value="Resolved">Resolved</option>
             <option value="Dispatched">Dispatched</option>
+            <option value="Resolved">Resolved</option>
+            <option value="Closed">Closed</option>
           </select>
         </div>
       </div>
@@ -162,7 +225,15 @@ export const TrackTicketsList: React.FC<TrackTicketsListProps> = ({ currentRole,
                   {paginatedTickets.map((t) => (
                     <tr key={t.id} className="hover:bg-slate-50/80 transition-colors">
                       <td className="py-3.5 px-4 font-mono text-[11px] text-red-600 font-bold whitespace-nowrap">
-                        #{t.id}
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/${roleSlug}/tickets/${t.id}`)}
+                          className="hover:underline inline-flex items-center gap-1 cursor-pointer group"
+                          title="Open live whole page tracking"
+                        >
+                          <span className="group-hover:text-red-700">#{t.id}</span>
+                          <Radio className="h-2.5 w-2.5 text-emerald-500 animate-pulse shrink-0" />
+                        </button>
                       </td>
                       <td className="py-3.5 px-4 font-semibold text-slate-900 whitespace-nowrap max-w-[200px] truncate">
                         {t.subject}
@@ -181,60 +252,28 @@ export const TrackTicketsList: React.FC<TrackTicketsListProps> = ({ currentRole,
                         )}
                       </td>
                       <td className="py-3.5 px-4 whitespace-nowrap">
-                        {isSuperAdmin ? (
-                          <select
-                            value={t.status}
-                            onChange={(e) =>
-                              updateTicketStatus(t.id, e.target.value as SupportTicket['status'])
-                            }
-                            className={`text-xs font-bold py-1 px-2.5 rounded-lg border outline-none cursor-pointer transition-all shadow-2xs ${
-                              t.status === 'Resolved'
-                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200 focus:border-emerald-500'
-                                : t.status === 'In Progress'
-                                ? 'bg-amber-50 text-amber-700 border-amber-200 focus:border-amber-500'
-                                : t.status === 'Investigating'
-                                ? 'bg-sky-50 text-sky-700 border-sky-200 focus:border-sky-500'
-                                : 'bg-purple-50 text-purple-700 border-purple-200 focus:border-purple-500'
-                            }`}
-                            title="Super Admin: Change ticket status"
-                          >
-                            <option value="In Progress">In Progress</option>
-                            <option value="Investigating">Investigating</option>
-                            <option value="Resolved">Resolved</option>
-                            <option value="Dispatched">Dispatched</option>
-                          </select>
-                        ) : (
-                          <span
-                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold border shadow-2xs whitespace-nowrap ${
-                              t.status === 'Resolved'
-                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200/80'
-                                : t.status === 'In Progress'
-                                ? 'bg-amber-50 text-amber-700 border-amber-200/80'
-                                : t.status === 'Investigating'
-                                ? 'bg-sky-50 text-sky-700 border-sky-200/80'
-                                : 'bg-purple-50 text-purple-700 border-purple-200/80'
-                            }`}
-                          >
-                            <span
-                              className={`h-1.5 w-1.5 rounded-full ${
-                                t.status === 'Resolved'
-                                  ? 'bg-emerald-500'
-                                  : t.status === 'In Progress'
-                                  ? 'bg-amber-500 animate-pulse'
-                                  : t.status === 'Investigating'
-                                  ? 'bg-sky-500 animate-pulse'
-                                  : 'bg-purple-500'
-                              }`}
-                            />
-                            <span>{t.status}</span>
+                        <div className="flex flex-col items-start gap-1">
+                          {getStatusBadge(t.status)}
+                          <span className="text-[10px] text-slate-400 font-medium flex items-center gap-1">
+                            <Clock className="h-2.5 w-2.5 text-slate-400" />
+                            <span>Updated {t.updatedRelative || formatRelativeTime(t.updatedAt || t.createdAt || t.submittedAt)}</span>
                           </span>
-                        )}
+                        </div>
                       </td>
                       <td className="py-3.5 px-4 text-[11px] text-slate-400 whitespace-nowrap">
                         {t.submittedAt}
                       </td>
                       <td className="py-3.5 px-4 text-right whitespace-nowrap">
                         <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => navigate(`/${roleSlug}/tickets/${t.id}`)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold text-red-700 bg-red-50 hover:bg-red-100 border border-red-200/80 rounded-lg transition-colors cursor-pointer shadow-2xs"
+                            title="Open live whole page tracking with step-by-step indicators"
+                          >
+                            <Radio className="h-3 w-3 text-red-600 animate-pulse shrink-0" />
+                            <span>Live Track</span>
+                          </button>
                           <button
                             type="button"
                             onClick={() => handleOpenTicket(t)}
@@ -396,14 +435,30 @@ export const TrackTicketsList: React.FC<TrackTicketsListProps> = ({ currentRole,
                     #{selectedTicket.id}
                   </span>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setSelectedTicket(null)}
-                  className="h-8 w-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center text-sm font-bold transition-colors cursor-pointer"
-                  title="Close"
-                >
-                  ✕
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const id = selectedTicket.id;
+                      setSelectedTicket(null);
+                      navigate(`/${roleSlug}/tickets/${id}`);
+                    }}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 transition-colors cursor-pointer shadow-2xs"
+                    title="Open Live Full-Page Tracking with Step-by-Step Indicators"
+                  >
+                    <Radio className="h-3 w-3 text-red-600 animate-pulse shrink-0" />
+                    <span className="hidden sm:inline">Live Tracker</span>
+                    <ExternalLink className="h-3 w-3 text-red-500 shrink-0" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedTicket(null)}
+                    className="h-8 w-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center text-sm font-bold transition-colors cursor-pointer"
+                    title="Close"
+                  >
+                    ✕
+                  </button>
+                </div>
               </div>
 
               {/* Modal Body (Scrollable) */}
@@ -429,10 +484,16 @@ export const TrackTicketsList: React.FC<TrackTicketsListProps> = ({ currentRole,
                 {/* Status & Support Response Section */}
                 <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2.5">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider flex items-center gap-1.5">
-                      <MessageSquare className="h-3.5 w-3.5 text-red-600 shrink-0" />
-                      Status & Support Response
-                    </span>
+                    <div className="flex flex-col">
+                      <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                        <MessageSquare className="h-3.5 w-3.5 text-red-600 shrink-0" />
+                        Status & Support Response
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-medium flex items-center gap-1 mt-0.5">
+                        <Clock className="h-2.5 w-2.5 text-slate-400" />
+                        <span>Last progress: {selectedTicket.updatedRelative || formatRelativeTime(selectedTicket.updatedAt || selectedTicket.createdAt || selectedTicket.submittedAt)}</span>
+                      </span>
+                    </div>
 
                     {/* ONLY Super Admin can change status; regular users see a badge */}
                     {isSuperAdmin ? (
@@ -448,40 +509,20 @@ export const TrackTicketsList: React.FC<TrackTicketsListProps> = ({ currentRole,
                             ? 'bg-amber-50 text-amber-700 border-amber-300'
                             : modalStatus === 'Investigating'
                             ? 'bg-sky-50 text-sky-700 border-sky-300'
-                            : 'bg-purple-50 text-purple-700 border-purple-300'
+                            : modalStatus === 'Dispatched'
+                            ? 'bg-purple-50 text-purple-700 border-purple-300'
+                            : 'bg-slate-100 text-slate-700 border-slate-300'
                         }`}
                         title="Super Admin: Update ticket status"
                       >
                         <option value="In Progress">In Progress</option>
                         <option value="Investigating">Investigating</option>
-                        <option value="Resolved">Resolved</option>
                         <option value="Dispatched">Dispatched</option>
+                        <option value="Resolved">Resolved</option>
+                        <option value="Closed">Closed</option>
                       </select>
                     ) : (
-                      <span
-                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold border shadow-2xs ${
-                          selectedTicket.status === 'Resolved'
-                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200/80'
-                            : selectedTicket.status === 'In Progress'
-                            ? 'bg-amber-50 text-amber-700 border-amber-200/80'
-                            : selectedTicket.status === 'Investigating'
-                            ? 'bg-sky-50 text-sky-700 border-sky-200/80'
-                            : 'bg-purple-50 text-purple-700 border-purple-200/80'
-                        }`}
-                      >
-                        <span
-                          className={`h-1.5 w-1.5 rounded-full ${
-                            selectedTicket.status === 'Resolved'
-                              ? 'bg-emerald-500'
-                              : selectedTicket.status === 'In Progress'
-                              ? 'bg-amber-500 animate-pulse'
-                              : selectedTicket.status === 'Investigating'
-                              ? 'bg-sky-500 animate-pulse'
-                              : 'bg-purple-500'
-                          }`}
-                        />
-                        <span>{selectedTicket.status}</span>
-                      </span>
+                      getStatusBadge(selectedTicket.status)
                     )}
                   </div>
 
@@ -499,6 +540,8 @@ export const TrackTicketsList: React.FC<TrackTicketsListProps> = ({ currentRole,
                     <p className="text-xs text-slate-600 leading-relaxed">
                       {selectedTicket.status === 'Resolved' &&
                         '✓ Fix deployed. MSIS engineering team has addressed the reported issue.'}
+                      {selectedTicket.status === 'Closed' &&
+                        '✓ Ticket closed. The reported technical issue has been resolved, verified, and officially closed.'}
                       {selectedTicket.status === 'In Progress' &&
                         '⚡ Triage ongoing. Technicians have isolated the reported defect and are formulating a code resolution.'}
                       {selectedTicket.status === 'Investigating' &&
