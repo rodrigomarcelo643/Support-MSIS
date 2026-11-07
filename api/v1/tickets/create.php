@@ -7,6 +7,7 @@
 
 require_once __DIR__ . '/../connection.php';
 require_once __DIR__ . '/helpers.php';
+require_once __DIR__ . '/mailer.php';
 
 // Only accept POST requests
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -309,7 +310,26 @@ if ($auditStmt) {
     $auditStmt->execute();
 }
 
-// 6. Return Clean JSON Response
+// 6. Dispatch Level 1 (Intake) Confirmation Email via root PHPMailer
+$emailNotification = send_ticket_progress_notification(
+    [
+        'id' => $ticketId,
+        'ticket_code' => $ticketCode,
+        'subject' => $subject,
+        'description' => $description,
+        'department' => $department,
+        'reporter_role' => $reporterRole,
+        'reporter_name' => $reporterName,
+        'reporter_email' => $reporterEmail,
+    ],
+    'In Progress',
+    null,
+    [
+        'name' => 'MSIS Intake System'
+    ]
+);
+
+// 7. Return Clean JSON Response
 $formattedTicket = [
     'id' => $ticketCode,
     'numericId' => $ticketId,
@@ -334,4 +354,5 @@ echo json_encode([
     'status' => 'success',
     'message' => 'Ticket filed successfully.',
     'ticket' => $formattedTicket,
+    'email_notification' => $emailNotification
 ]);
