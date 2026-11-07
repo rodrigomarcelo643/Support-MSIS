@@ -40,8 +40,7 @@ $envPaths = array_values(array_unique(array_filter([
 
 $envConfig = [];
 foreach ($envPaths as $envPath) {
-    if (file_exists($envPath) && is_readable($envPath)) {
-        $lines = file($envPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    if (file_exists($envPath) && ($lines = @file($envPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES)) !== false) {
         foreach ($lines as $line) {
             $line = trim($line);
             if (empty($line) || strpos($line, '#') === 0) continue;
