@@ -39,7 +39,7 @@
 
 ## 🌟 Overview
 
-The **Medical Systems & Information Services (MSIS) Support System** provides an end-to-end incident reporting, diagnostic file transfer, real-time ticket tracking, and multi-stage triage platform for the academic and clinical community of Southwestern University PHINMA School of Medicine.
+The **Medical Student Information System (MSIS) Support System** provides an end-to-end incident reporting, diagnostic file transfer, real-time ticket tracking, and multi-stage triage platform for the academic and clinical community of Southwestern University PHINMA School of Medicine.
 
 Built with high availability, responsive design, and institutional identity at its core, the platform streamlines the submission of technical concerns—from exam portal lockouts and grading inquiries to hardware diagnostics—while ensuring that technical personnel can triage, assign, respond to, and resolve issues within strict SLA deadlines.
 
@@ -258,5 +258,5 @@ Copyright (c) 2026 MSIS - Southwestern University PHINMA School of Medicine. All
 
 <div align="center">
   <p><strong>Southwestern University PHINMA • School of Medicine</strong></p>
-  <p>Medical Systems & Information Services (MSIS) &bull; Urgello St., Sambag II, Cebu City, Philippines 6000</p>
+  <p>Medical Student Information System (MSIS) &bull; Urgello St., Sambag II, Cebu City, Philippines 6000</p>
 </div>
