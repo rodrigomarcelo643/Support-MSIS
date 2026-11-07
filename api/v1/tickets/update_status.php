@@ -7,6 +7,7 @@
 
 require_once __DIR__ . '/../connection.php';
 require_once __DIR__ . '/helpers.php';
+require_once __DIR__ . '/mailer.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST' && $_SERVER['REQUEST_METHOD'] !== 'PATCH') {
     http_response_code(405);
@@ -38,7 +39,7 @@ if (empty($ticketIdentifier)) {
     exit;
 }
 
-$validStatuses = ['In Progress', 'Investigating', 'Resolved', 'Dispatched'];
+$validStatuses = ['In Progress', 'Investigating', 'Dispatched', 'Resolved', 'Closed'];
 if (!empty($newStatus) && !in_array($newStatus, $validStatuses)) {
     http_response_code(400);
     echo json_encode([
@@ -78,7 +79,7 @@ $updates[] = "status = ?";
 $types .= 's';
 $params[] = $statusToSet;
 
-if ($statusToSet === 'Resolved' && $previousStatus !== 'Resolved') {
+if (in_array($statusToSet, ['Resolved', 'Closed']) && !in_array($previousStatus, ['Resolved', 'Closed'])) {
     $updates[] = "resolved_at = NOW()";
     $updates[] = "resolved_by_id = ?";
     $updates[] = "resolved_by_email = ?";
@@ -167,8 +168,51 @@ while ($a = $attRes->fetch_assoc()) {
     ];
 }
 
+// 7. Dispatch Step-by-Step Progress Notification Email via root PHPMailer
+$emailNotification = send_ticket_progress_notification(
+    $updatedTicket,
+    $statusToSet,
+    $supportMessage,
+    [
+        'id' => $adminId,
+        'name' => $adminName,
+        'email' => $adminEmail
+    ]
+);
+
+// Log email dispatch result in ticket audit logs
+if (isset($emailNotification['sent'])) {
+    $mailAuditAction = $emailNotification['sent'] ? 'EMAIL_NOTIFICATION_SENT' : 'EMAIL_NOTIFICATION_FAILED';
+    $mailNotes = $emailNotification['sent']
+        ? "Progress update email dispatched to {$updatedTicket['reporter_email']} for level '{$statusToSet}'."
+        : "Failed to dispatch progress email: " . ($emailNotification['error'] ?? $emailNotification['reason'] ?? 'Unknown mail error');
+
+    $mailAuditStmt = $conn->prepare("
+        INSERT INTO ticket_audit_logs (
+            ticket_id, action, previous_status, new_status, performed_by_id, performed_by_email, performed_by_role, notes, ip_address, created_at
+        ) VALUES (
+            ?, ?, ?, ?, ?, ?, 'System Mailer', ?, ?, NOW()
+        )
+    ");
+    if ($mailAuditStmt) {
+        $mailAuditStmt->bind_param(
+            "isssssss",
+            $ticketId,
+            $mailAuditAction,
+            $previousStatus,
+            $statusToSet,
+            $adminId,
+            $adminEmail,
+            $mailNotes,
+            $clientIp
+        );
+        $mailAuditStmt->execute();
+    }
+}
+
 echo json_encode([
     'status' => 'success',
     'message' => 'Ticket updated successfully.',
     'ticket' => format_ticket_record($updatedTicket, $attachments),
+    'email_notification' => $emailNotification
 ]);
