@@ -7,7 +7,9 @@
 
 require_once __DIR__ . '/../connection.php';
 require_once __DIR__ . '/helpers.php';
-require_once __DIR__ . '/mailer.php';
+if (file_exists(__DIR__ . '/mailer.php')) {
+    @include_once __DIR__ . '/mailer.php';
+}
 
 // Only accept POST requests
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -310,24 +312,34 @@ if ($auditStmt) {
     $auditStmt->execute();
 }
 
-// 6. Dispatch Level 1 (Intake) Confirmation Email via root PHPMailer
-$emailNotification = send_ticket_progress_notification(
-    [
-        'id' => $ticketId,
-        'ticket_code' => $ticketCode,
-        'subject' => $subject,
-        'description' => $description,
-        'department' => $department,
-        'reporter_role' => $reporterRole,
-        'reporter_name' => $reporterName,
-        'reporter_email' => $reporterEmail,
-    ],
-    'In Progress',
-    null,
-    [
-        'name' => 'MSIS Intake System'
-    ]
-);
+// 6. Dispatch Level 1 (Intake) Confirmation Email via root PHPMailer (fail-safe)
+$emailNotification = ['sent' => false, 'reason' => 'Mailer not dispatched'];
+try {
+    if (function_exists('send_ticket_progress_notification')) {
+        $emailNotification = send_ticket_progress_notification(
+            [
+                'id' => $ticketId,
+                'ticket_code' => $ticketCode,
+                'subject' => $subject,
+                'description' => $description,
+                'department' => $department,
+                'reporter_role' => $reporterRole,
+                'reporter_name' => $reporterName,
+                'reporter_email' => $reporterEmail,
+            ],
+            'In Progress',
+            null,
+            [
+                'name' => 'MSIS Intake System'
+            ]
+        );
+    }
+} catch (Throwable $mailEx) {
+    $emailNotification = [
+        'sent' => false,
+        'reason' => 'Notification error: ' . $mailEx->getMessage()
+    ];
+}
 
 // 7. Return Clean JSON Response
 $formattedTicket = [
