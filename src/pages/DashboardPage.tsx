@@ -252,7 +252,7 @@ export const DashboardPage: React.FC = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
                   <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-100">
                     <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">Department</span>
-                    <span className="text-xs font-semibold text-slate-800">Medical Systems & Information Services</span>
+                    <span className="text-xs font-semibold text-slate-800">Medical Student Information System</span>
                   </div>
                   <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-100">
                     <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">Permissions Scope</span>
