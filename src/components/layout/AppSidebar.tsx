@@ -10,6 +10,7 @@ import {
   SidebarCollapsedSkeleton,
   usePageSkeleton,
 } from '../ui/skeleton';
+import { formatBadgeCount } from '../../lib/utils';
 import {
   Bell,
   LayoutGrid,
@@ -233,7 +234,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
                   <span className="truncate">All Tickets</span>
                 </div>
                 <span className="text-[10px] text-red-600 font-bold shrink-0">
-                  {userTicketsCount}
+                  {formatBadgeCount(userTicketsCount)}
                 </span>
               </button>
             </div>
@@ -271,7 +272,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
                   <span className="truncate">Track My Tickets</span>
                 </div>
                 <span className="text-[10px] font-bold text-red-600 shrink-0">
-                  {userTicketsCount}
+                  {formatBadgeCount(userTicketsCount)}
                 </span>
               </button>
             </div>
@@ -293,7 +294,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
             </div>
             {userActivityLogsCount > 0 ? (
               <span className="h-5 min-w-[20px] px-1.5 rounded-full bg-red-600 text-white text-[10px] font-bold flex items-center justify-center shadow-xs shrink-0">
-                {userActivityLogsCount}
+                {formatBadgeCount(userActivityLogsCount)}
               </span>
             ) : (
               <span className="text-[10px] text-slate-400 font-medium shrink-0">
@@ -454,7 +455,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
                 ? 'bg-red-50 text-red-600 font-bold ring-2 ring-red-500/20'
                 : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
             }`}
-            title={isSuperAdmin ? `All Tickets (${userTicketsCount})` : `Track My Tickets (${userTicketsCount})`}
+            title={isSuperAdmin ? `All Tickets (${formatBadgeCount(userTicketsCount)})` : `Track My Tickets (${formatBadgeCount(userTicketsCount)})`}
           >
             {isSuperAdmin ? <Folder className="h-4 w-4" /> : <Ticket className="h-4 w-4" />}
           </button>
@@ -468,7 +469,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
                 ? 'bg-red-50 text-red-600 font-bold ring-2 ring-red-500/20'
                 : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
             }`}
-            title={`Activity (${userActivityLogsCount} activity logs)`}
+            title={`Activity (${formatBadgeCount(userActivityLogsCount)} activity logs)`}
           >
             <Bell className="h-4 w-4" />
             {userActivityLogsCount > 0 && (
