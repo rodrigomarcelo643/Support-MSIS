@@ -7,7 +7,9 @@
 
 require_once __DIR__ . '/../connection.php';
 require_once __DIR__ . '/helpers.php';
-require_once __DIR__ . '/mailer.php';
+if (file_exists(__DIR__ . '/mailer.php')) {
+    @include_once __DIR__ . '/mailer.php';
+}
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST' && $_SERVER['REQUEST_METHOD'] !== 'PATCH') {
     http_response_code(405);
@@ -18,17 +20,18 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST' && $_SERVER['REQUEST_METHOD'] !== 'PAT
     exit;
 }
 
-ensure_ticket_tables_exist($conn);
+try {
+    ensure_ticket_tables_exist($conn);
 
-$rawInput = file_get_contents('php://input');
-$data = json_decode($rawInput, true) ?: $_POST;
+    $rawInput = file_get_contents('php://input');
+    $data = json_decode($rawInput, true) ?: $_POST;
 
-$ticketIdentifier = trim($data['id'] ?? $data['ticket_code'] ?? '');
-$newStatus = trim($data['status'] ?? '');
-$supportMessage = isset($data['support_message']) ? trim($data['support_message']) : null;
-$adminId = trim($data['admin_id'] ?? 'usr_super_admin');
-$adminName = trim($data['admin_name'] ?? 'Super Admin');
-$adminEmail = trim($data['admin_email'] ?? 'admin@msis.edu');
+    $ticketIdentifier = trim((string)($data['id'] ?? $data['ticket_code'] ?? ''));
+    $newStatus = trim((string)($data['status'] ?? ''));
+    $supportMessage = isset($data['support_message']) && $data['support_message'] !== null ? trim((string)$data['support_message']) : null;
+    $adminId = trim((string)($data['admin_id'] ?? 'usr_super_admin')) ?: 'usr_super_admin';
+    $adminName = trim((string)($data['admin_name'] ?? 'Super Admin')) ?: 'Super Admin';
+    $adminEmail = trim((string)($data['admin_email'] ?? 'admin@msis.edu')) ?: 'admin@msis.edu';
 
 if (empty($ticketIdentifier)) {
     http_response_code(400);
@@ -168,51 +171,68 @@ while ($a = $attRes->fetch_assoc()) {
     ];
 }
 
-// 7. Dispatch Step-by-Step Progress Notification Email via root PHPMailer
-$emailNotification = send_ticket_progress_notification(
-    $updatedTicket,
-    $statusToSet,
-    $supportMessage,
-    [
-        'id' => $adminId,
-        'name' => $adminName,
-        'email' => $adminEmail
-    ]
-);
-
-// Log email dispatch result in ticket audit logs
-if (isset($emailNotification['sent'])) {
-    $mailAuditAction = $emailNotification['sent'] ? 'EMAIL_NOTIFICATION_SENT' : 'EMAIL_NOTIFICATION_FAILED';
-    $mailNotes = $emailNotification['sent']
-        ? "Progress update email dispatched to {$updatedTicket['reporter_email']} for level '{$statusToSet}'."
-        : "Failed to dispatch progress email: " . ($emailNotification['error'] ?? $emailNotification['reason'] ?? 'Unknown mail error');
-
-    $mailAuditStmt = $conn->prepare("
-        INSERT INTO ticket_audit_logs (
-            ticket_id, action, previous_status, new_status, performed_by_id, performed_by_email, performed_by_role, notes, ip_address, created_at
-        ) VALUES (
-            ?, ?, ?, ?, ?, ?, 'System Mailer', ?, ?, NOW()
-        )
-    ");
-    if ($mailAuditStmt) {
-        $mailAuditStmt->bind_param(
-            "isssssss",
-            $ticketId,
-            $mailAuditAction,
-            $previousStatus,
-            $statusToSet,
-            $adminId,
-            $adminEmail,
-            $mailNotes,
-            $clientIp
-        );
-        $mailAuditStmt->execute();
+    // 7. Dispatch Step-by-Step Progress Notification Email via root PHPMailer (fail-safe)
+    $emailNotification = ['sent' => false, 'reason' => 'Mailer not dispatched'];
+    try {
+        if (function_exists('send_ticket_progress_notification')) {
+            $emailNotification = send_ticket_progress_notification(
+                $updatedTicket,
+                $statusToSet,
+                $supportMessage,
+                [
+                    'id' => $adminId,
+                    'name' => $adminName,
+                    'email' => $adminEmail
+                ]
+            );
+        }
+    } catch (Throwable $mailEx) {
+        $emailNotification = [
+            'sent' => false,
+            'reason' => 'Notification error: ' . $mailEx->getMessage()
+        ];
     }
-}
 
-echo json_encode([
-    'status' => 'success',
-    'message' => 'Ticket updated successfully.',
-    'ticket' => format_ticket_record($updatedTicket, $attachments),
-    'email_notification' => $emailNotification
-]);
+    // Log email dispatch result in ticket audit logs
+    if (isset($emailNotification['sent'])) {
+        $mailAuditAction = $emailNotification['sent'] ? 'EMAIL_NOTIFICATION_SENT' : 'EMAIL_NOTIFICATION_FAILED';
+        $mailNotes = $emailNotification['sent']
+            ? "Progress update email dispatched to {$updatedTicket['reporter_email']} for level '{$statusToSet}'."
+            : "Failed to dispatch progress email: " . ($emailNotification['error'] ?? $emailNotification['reason'] ?? 'Unknown mail error');
+
+        $mailAuditStmt = $conn->prepare("
+            INSERT INTO ticket_audit_logs (
+                ticket_id, action, previous_status, new_status, performed_by_id, performed_by_email, performed_by_role, notes, ip_address, created_at
+            ) VALUES (
+                ?, ?, ?, ?, ?, ?, 'System Mailer', ?, ?, NOW()
+            )
+        ");
+        if ($mailAuditStmt) {
+            $mailAuditStmt->bind_param(
+                "isssssss",
+                $ticketId,
+                $mailAuditAction,
+                $previousStatus,
+                $statusToSet,
+                $adminId,
+                $adminEmail,
+                $mailNotes,
+                $clientIp
+            );
+            $mailAuditStmt->execute();
+        }
+    }
+
+    echo json_encode([
+        'status' => 'success',
+        'message' => 'Ticket updated successfully.',
+        'ticket' => format_ticket_record($updatedTicket, $attachments),
+        'email_notification' => $emailNotification
+    ]);
+} catch (Throwable $topErr) {
+    http_response_code(500);
+    echo json_encode([
+        'status' => 'error',
+        'message' => 'Failed to update status: ' . $topErr->getMessage()
+    ]);
+}
